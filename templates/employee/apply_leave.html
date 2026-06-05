@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+
+{% block title %}Apply Leave - PayrollPro{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-calendar-plus me-2"></i>Apply for Leave</h2>
+            <a href="{{ url_for('my_leaves') }}" class="btn btn-outline-primary">
+                <i class="bi bi-list-ul me-1"></i> View My Leaves
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Leave Application Form -->
+    <div class="col-md-8 mb-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Leave Application Form</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" id="leaveApplicationForm" action="{{ url_for('apply_leave') }}">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="start_date" class="form-label">Start Date</label>
+                            {{ form.start_date(class="form-control", type="date") }}
+                            {% if form.start_date.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.start_date.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="end_date" class="form-label">End Date</label>
+                            {{ form.end_date(class="form-control", type="date") }}
+                            {% if form.end_date.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.end_date.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="leave_type" class="form-label">Leave Type</label>
+                        {{ form.leave_type(class="form-select") }}
+                        {% if form.leave_type.errors %}
+                            <div class="text-danger">
+                                {% for error in form.leave_type.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="reason" class="form-label">Reason for Leave</label>
+                        {{ form.reason(class="form-control", rows=4, placeholder="Please provide a detailed reason for your leave request...") }}
+                        {% if form.reason.errors %}
+                            <div class="text-danger">
+                                {% for error in form.reason.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <small>
+                            <i class="bi bi-info-circle me-1"></i>
+                            Leave requests must be submitted at least one day in advance. You cannot apply for leave on past dates.
+                        </small>
+                    </div>
+                    
+                    <div class="text-end">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-send me-1"></i> Submit Request
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Leave Balance Card -->
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Available Leave Balance</h5>
+            </div>
+            <div class="card-body">
+                {% set leave_balance = get_leave_balance(session.get('user_id')) %}
+                
+                <div class="row g-3">
+                    <div class="col-6">
+                        <div class="leave-balance-card bg-primary bg-opacity-10">
+                            <div class="leave-balance-value text-primary">{{ leave_balance.annual }}</div>
+                            <div class="leave-balance-label text-primary">Annual</div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-6">
+                        <div class="leave-balance-card bg-danger bg-opacity-10">
+                            <div class="leave-balance-value text-danger">{{ leave_balance.sick }}</div>
+                            <div class="leave-balance-label text-danger">Sick</div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-6">
+                        <div class="leave-balance-card bg-warning bg-opacity-10">
+                            <div class="leave-balance-value text-warning">{{ leave_balance.casual }}</div>
+                            <div class="leave-balance-label text-warning">Casual</div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-6">
+                        <div class="leave-balance-card bg-secondary bg-opacity-10">
+                            <div class="leave-balance-value text-secondary">{{ leave_balance.unpaid }}</div>
+                            <div class="leave-balance-label text-secondary">Unpaid</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <h6>Leave Policy:</h6>
+                    <ul class="small text-muted">
+                        <li>Annual leaves are for planned vacations and personal time off.</li>
+                        <li>Sick leaves require a medical certificate for absences exceeding 2 days.</li>
+                        <li>Casual leaves can be taken for urgent personal matters.</li>
+                        <li>Unpaid leaves will affect your monthly salary calculation.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/leave.js') }}"></script>
+{% endblock %}

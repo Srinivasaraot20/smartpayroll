@@ -1,0 +1,811 @@
+{% extends 'base.html' %}
+
+{% block title %}Statutory Compliance & Tax Reports - PayrollPro{% endblock %}
+
+{% block content %}
+<!-- Custom Style overrides for compliance dashboard -->
+<style>
+    .compliance-bg {
+        background-color: #0F172A;
+        color: #F8FAFC;
+    }
+    .compliance-card {
+        background-color: #1E293B;
+        border: 1px solid #334155;
+        border-radius: 0.75rem;
+        transition: all 0.3s ease;
+    }
+    .compliance-card:hover {
+        border-color: #475569;
+        box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
+    }
+    .text-muted-custom {
+        color: #94A3B8;
+    }
+    .text-accent-blue {
+        color: #38BDF8;
+    }
+    .border-muted-custom {
+        border-color: #334155;
+    }
+    .table-dark-custom {
+        color: #F8FAFC;
+        border-color: #334155;
+    }
+    .table-dark-custom th {
+        background-color: #0F172A;
+        color: #38BDF8;
+        font-weight: 600;
+        border-bottom: 2px solid #334155;
+    }
+    .table-dark-custom td {
+        background-color: #1E293B;
+        border-bottom: 1px solid #334155;
+    }
+    .nav-tabs-custom .nav-link {
+        color: #94A3B8;
+        border: none;
+        border-bottom: 2px solid transparent;
+        font-weight: 500;
+        padding: 0.75rem 1.25rem;
+    }
+    .nav-tabs-custom .nav-link:hover {
+        color: #F8FAFC;
+        border-bottom-color: #475569;
+    }
+    .nav-tabs-custom .nav-link.active {
+        color: #38BDF8;
+        background-color: transparent;
+        border-bottom-color: #38BDF8;
+    }
+    .form-control-custom {
+        background-color: #0F172A;
+        border: 1px solid #334155;
+        color: #F8FAFC;
+    }
+    .form-control-custom:focus {
+        background-color: #0F172A;
+        border-color: #38BDF8;
+        color: #F8FAFC;
+        box-shadow: 0 0 0 0.25rem rgba(56, 189, 248, 0.25);
+    }
+    .badge-filed {
+        background-color: rgba(16, 185, 129, 0.15);
+        color: #34D399;
+        border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .badge-pending {
+        background-color: rgba(245, 158, 11, 0.15);
+        color: #FBBF24;
+        border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    .badge-overdue {
+        background-color: rgba(239, 68, 68, 0.15);
+        color: #FCA5A5;
+        border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+</style>
+
+<div class="container-fluid py-2 compliance-bg">
+    <!-- Breadcrumb & Title -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-0 text-white"><i class="bi bi-shield-check text-accent-blue me-2"></i>Statutory Compliance Dashboard</h2>
+            <p class="text-muted-custom mb-0">Manage PF, ESI, TDS, Professional Tax returns and employee registrations</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button onclick="window.print()" class="btn btn-outline-secondary btn-sm text-white border-muted-custom">
+                <i class="bi bi-printer me-1"></i> Print Dashboard
+            </button>
+        </div>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="card compliance-card mb-4">
+        <div class="card-body py-3">
+            <form method="GET" action="{{ url_for('compliance_reports') }}" class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label for="month" class="form-label small text-muted-custom">Filing Month</label>
+                    <select class="form-select form-control-custom" id="month" name="month">
+                        {% for i in range(1, 13) %}
+                            <option value="{{ i }}" {% if month == i %}selected{% endif %}>
+                                {{ get_month_name(i) }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="year" class="form-label small text-muted-custom">Filing Year</label>
+                    <select class="form-select form-control-custom" id="year" name="year">
+                        {% for y in range(2025, 2028) %}
+                            <option value="{{ y }}" {% if year == y %}selected{% endif %}>{{ y }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="type" class="form-label small text-muted-custom">Compliance Area</label>
+                    <select class="form-select form-control-custom" id="type" name="type">
+                        <option value="pf" {% if report_type == 'pf' %}selected{% endif %}>Provident Fund (PF)</option>
+                        <option value="esi" {% if report_type == 'esi' %}selected{% endif %}>Employee State Insurance (ESI)</option>
+                        <option value="tds" {% if report_type == 'tds' %}selected{% endif %}>Tax Deducted at Source (TDS)</option>
+                        <option value="pt" {% if report_type == 'pt' %}selected{% endif %}>Professional Tax (PT)</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-grid">
+                    <button type="submit" class="btn btn-primary bg-gradient">
+                        <i class="bi bi-funnel-fill me-1"></i> Apply Filters
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Dashboard Quick Stats Cards -->
+    <div class="row g-3 mb-4">
+        <!-- Compliance Score Card -->
+        <div class="col-md-3">
+            <div class="card compliance-card h-100 py-2">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <span class="text-muted-custom small fw-semibold uppercase">Compliance Score</span>
+                            <h2 class="fw-bold my-2 text-accent-blue">{{ compliance_stats.compliance_score }}%</h2>
+                        </div>
+                        <div class="bg-primary bg-opacity-10 p-2 rounded">
+                            <i class="bi bi-patch-check text-accent-blue fs-4"></i>
+                        </div>
+                    </div>
+                    <div class="progress mt-2" style="height: 6px; background-color: #0F172A;">
+                        <div class="progress-bar bg-accent-blue" role="progressbar" style="width: {{ compliance_stats.compliance_score }}%" aria-valuenow="{{ compliance_stats.compliance_score }}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                    <span class="small text-muted-custom mt-2 d-inline-block">Calculated on filed returns & docs</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Coverage & Registration Card -->
+        <div class="col-md-3">
+            <div class="card compliance-card h-100 py-2">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <span class="text-muted-custom small fw-semibold">Coverage Status</span>
+                            <h3 class="fw-bold my-2 text-white">{{ compliance_stats.total_employees }} Employees</h3>
+                        </div>
+                        <div class="bg-success bg-opacity-10 p-2 rounded">
+                            <i class="bi bi-people text-success fs-4"></i>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-3 mt-1 small">
+                        <span class="text-muted-custom"><i class="bi bi-piggy-bank-fill text-accent-blue me-1"></i>PF: <strong>{{ compliance_stats.pf_registered }}</strong></span>
+                        <span class="text-muted-custom"><i class="bi bi-heart-pulse-fill text-danger me-1"></i>ESI: <strong>{{ compliance_stats.esi_registered }}</strong></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Monthly TDS deductions -->
+        <div class="col-md-3">
+            <div class="card compliance-card h-100 py-2">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <span class="text-muted-custom small fw-semibold">TDS Deductions</span>
+                            <h2 class="fw-bold my-2 text-white">${{ "%.2f"|format(compliance_stats.tds_deductions) }}</h2>
+                        </div>
+                        <div class="bg-warning bg-opacity-10 p-2 rounded">
+                            <i class="bi bi-currency-dollar text-warning fs-4"></i>
+                        </div>
+                    </div>
+                    <span class="small text-muted-custom"><i class="bi bi-info-circle me-1"></i>TDS deductions this period</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending Filings & Due Alerts -->
+        <div class="col-md-3">
+            <div class="card compliance-card h-100 py-2">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <span class="text-muted-custom small fw-semibold">Pending Returns</span>
+                            <h2 class="fw-bold my-2 {% if compliance_stats.pending_filings > 0 %}text-warning{% else %}text-success{% endif %}">
+                                {{ compliance_stats.pending_filings }} / 4
+                            </h2>
+                        </div>
+                        <div class="bg-danger bg-opacity-10 p-2 rounded">
+                            <i class="bi bi-calendar-event text-danger fs-4"></i>
+                        </div>
+                    </div>
+                    <span class="small text-muted-custom">Due for {{ get_month_name(month) }} {{ year }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Warnings / Missing Documents Alert Banner -->
+    {% if compliance_alerts %}
+    <div class="alert alert-warning border-0 bg-warning bg-opacity-10 text-warning compliance-card mb-4">
+        <div class="d-flex align-items-center justify-content-between cursor-pointer" data-bs-toggle="collapse" data-bs-target="#alertsCollapse" aria-expanded="false" aria-controls="alertsCollapse">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-exclamation-triangle-fill fs-4 me-3"></i>
+                <div>
+                    <h6 class="alert-heading fw-bold mb-0">Missing Employee Statutory Details ({{ compliance_alerts|length }} Records)</h6>
+                    <p class="mb-0 small text-muted-custom text-warning">Some employees do not have registered PAN, Aadhaar, UAN, or ESI numbers. Click to view details.</p>
+                </div>
+            </div>
+            <i class="bi bi-chevron-down fs-5"></i>
+        </div>
+        <div class="collapse mt-3" id="alertsCollapse">
+            <hr class="border-warning opacity-25">
+            <div class="table-responsive" style="max-height: 250px;">
+                <table class="table table-sm table-borderless text-warning align-middle small mb-0">
+                    <thead>
+                        <tr class="border-bottom border-warning border-opacity-10">
+                            <th>ID</th>
+                            <th>Employee Name</th>
+                            <th>Department</th>
+                            <th>Designation</th>
+                            <th>Missing Statutory Items</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for alert in compliance_alerts %}
+                        <tr>
+                            <td>#{{ alert.id }}</td>
+                            <td class="fw-semibold">{{ alert.name }}</td>
+                            <td>{{ alert.department }}</td>
+                            <td>{{ alert.designation }}</td>
+                            <td>
+                                {% for item in alert.missing %}
+                                <span class="badge bg-danger bg-opacity-25 text-danger border border-danger border-opacity-20 me-1">{{ item }}</span>
+                                {% endfor %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Main Section Tabs Card -->
+    <div class="card compliance-card mb-4">
+        <div class="card-header border-muted-custom bg-transparent p-0">
+            <ul class="nav nav-tabs nav-tabs-custom card-header-tabs m-0 border-0" id="complianceTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="report-tab" data-bs-toggle="tab" data-bs-target="#report" type="button" role="tab" aria-controls="report" aria-selected="true">
+                        <i class="bi bi-file-earmark-spreadsheet me-2"></i>Statutory Registry
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="calendar-tab" data-bs-toggle="tab" data-bs-target="#calendar" type="button" role="tab" aria-controls="calendar" aria-selected="false">
+                        <i class="bi bi-calendar3 me-2"></i>Compliance Calendar
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="analytics-tab" data-bs-toggle="tab" data-bs-target="#analytics" type="button" role="tab" aria-controls="analytics" aria-selected="false">
+                        <i class="bi bi-bar-chart-line me-2"></i>Compliance Analytics
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="audit-tab" data-bs-toggle="tab" data-bs-target="#audit" type="button" role="tab" aria-controls="audit" aria-selected="false">
+                        <i class="bi bi-clock-history me-2"></i>Filing History & Audit
+                    </button>
+                </li>
+            </ul>
+        </div>
+        <div class="card-body">
+            <div class="tab-content" id="complianceTabContent">
+                
+                <!-- TAB 1: REPORT & TABLE -->
+                <div class="tab-pane fade show active" id="report" role="tabpanel" aria-labelledby="report-tab">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+                        <div>
+                            <h4 class="fw-bold mb-0 text-white">
+                                {% if report_type == 'pf' %}
+                                    Provident Fund (PF) Compliance
+                                {% elif report_type == 'esi' %}
+                                    Employee State Insurance (ESI) Compliance
+                                {% elif report_type == 'tds' %}
+                                    Tax Deducted at Source (TDS) Registry
+                                {% elif report_type == 'pt' %}
+                                    Professional Tax (PT) Summary
+                                {% endif %}
+                            </h4>
+                            <p class="text-muted-custom small mb-0">Period: {{ get_month_name(month) }} {{ year }} | Status: 
+                                {% if report_data.filing_status == 'Filed' %}
+                                <span class="badge badge-filed"><i class="bi bi-check-circle-fill me-1"></i>Filed (Ref: {{ report_data.receipt_number }})</span>
+                                {% else %}
+                                <span class="badge badge-pending"><i class="bi bi-hourglass-split me-1"></i>Pending Filing</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <!-- Filing action button -->
+                            {% if report_data.filing_status != 'Filed' and report_data.employees %}
+                            <form method="POST" action="{{ url_for('compliance_action') }}">
+                                <input type="hidden" name="action" value="file">
+                                <input type="hidden" name="type" value="{{ report_type }}">
+                                <input type="hidden" name="month" value="{{ month }}">
+                                <input type="hidden" name="year" value="{{ year }}">
+                                <button type="submit" class="btn btn-success bg-gradient btn-sm">
+                                    <i class="bi bi-check-square me-1"></i> Mark as Filed
+                                </button>
+                            </form>
+                            {% endif %}
+                            
+                            <!-- Export and reports -->
+                            <a href="{{ url_for('download_compliance_csv') }}?month={{ month }}&year={{ year }}&type={{ report_type }}" class="btn btn-sm btn-outline-light border-muted-custom">
+                                <i class="bi bi-filetype-csv me-1"></i> CSV
+                            </a>
+                            <a href="{{ url_for('download_compliance_pdf') }}?month={{ month }}&year={{ year }}&type={{ report_type }}" class="btn btn-sm btn-outline-light border-muted-custom">
+                                <i class="bi bi-filetype-pdf me-1"></i> PDF
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Search Bar and filters -->
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <div class="input-group">
+                                <span class="input-group-text form-control-custom text-muted-custom border-end-0"><i class="bi bi-search"></i></span>
+                                <input type="text" id="employeeSearchInput" class="form-control form-control-custom border-start-0" placeholder="Search employee by name, ID, or tax identification number...">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <select id="stateFilterSelect" class="form-select form-control-custom">
+                                <option value="">Filter by State (All)</option>
+                                <option value="Maharashtra">Maharashtra</option>
+                                <option value="Karnataka">Karnataka</option>
+                                <option value="Tamil Nadu">Tamil Nadu</option>
+                                <option value="Delhi">Delhi</option>
+                                <option value="Gujarat">Gujarat</option>
+                                <option value="West Bengal">West Bengal</option>
+                                <option value="Telangana">Telangana</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select id="departmentFilterSelect" class="form-select form-control-custom">
+                                <option value="">Filter by Department (All)</option>
+                                <option value="HR">HR</option>
+                                <option value="IT">IT</option>
+                                <option value="Finance">Finance</option>
+                                <option value="Marketing">Marketing</option>
+                                <option value="Operations">Operations</option>
+                                <option value="Sales">Sales</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    {% if report_data and report_data.employees %}
+                        <div class="table-responsive">
+                            <table class="table table-hover table-dark-custom align-middle" id="complianceRecordsTable">
+                                <thead>
+                                    {% if report_type == 'pf' %}
+                                        <tr>
+                                            <th>Emp ID</th>
+                                            <th>Employee Name</th>
+                                            <th>UAN Number</th>
+                                            <th class="text-end">PF Wages</th>
+                                            <th class="text-end">EE Contribution (5%)</th>
+                                            <th class="text-end">ER Contribution (5%)</th>
+                                            <th class="text-end">Total PF Amount</th>
+                                            <th class="text-center">Status</th>
+                                        </tr>
+                                    {% elif report_type == 'esi' %}
+                                        <tr>
+                                            <th>Emp ID</th>
+                                            <th>Employee Name</th>
+                                            <th>ESI Number</th>
+                                            <th class="text-end">Gross Salary</th>
+                                            <th class="text-end">EE Contribution (2%)</th>
+                                            <th class="text-end">ER Contribution (3%)</th>
+                                            <th class="text-end">Total ESI</th>
+                                            <th class="text-center">Status</th>
+                                        </tr>
+                                    {% elif report_type == 'tds' %}
+                                        <tr>
+                                            <th>Emp ID</th>
+                                            <th>Employee Name</th>
+                                            <th>PAN Number</th>
+                                            <th class="text-end">Taxable Income</th>
+                                            <th class="text-end">TDS Deducted</th>
+                                            <th class="text-center">Financial Year</th>
+                                            <th class="text-center">Status</th>
+                                        </tr>
+                                    {% elif report_type == 'pt' %}
+                                        <tr>
+                                            <th>Emp ID</th>
+                                            <th>Employee Name</th>
+                                            <th>State</th>
+                                            <th class="text-end">Gross Salary</th>
+                                            <th class="text-end">PT Amount</th>
+                                            <th class="text-center">Status</th>
+                                        </tr>
+                                    {% endif %}
+                                </thead>
+                                <tbody>
+                                    {% for employee in report_data.employees %}
+                                        <tr data-name="{{ employee.name }}" data-id="{{ employee.id }}" data-state="{{ employee.state }}" data-uan="{{ employee.uan_number }}" data-esi="{{ employee.esi_number }}" data-pan="{{ employee.pan_number }}">
+                                            <td>#{{ employee.id }}</td>
+                                            <td class="fw-semibold text-white">{{ employee.name }}</td>
+                                            
+                                            {% if report_type == 'pf' %}
+                                                <td><span class="font-monospace text-muted-custom">{{ employee.uan_number }}</span></td>
+                                                <td class="text-end text-white">${{ "%.2f"|format(employee.pf_wages) }}</td>
+                                                <td class="text-end text-accent-blue">${{ "%.2f"|format(employee.employee_contribution) }}</td>
+                                                <td class="text-end text-muted-custom">${{ "%.2f"|format(employee.employer_contribution) }}</td>
+                                                <td class="text-end fw-bold text-white">${{ "%.2f"|format(employee.total_pf) }}</td>
+                                            {% elif report_type == 'esi' %}
+                                                <td><span class="font-monospace text-muted-custom">{{ employee.esi_number }}</span></td>
+                                                <td class="text-end text-white">${{ "%.2f"|format(employee.gross_salary) }}</td>
+                                                <td class="text-end text-accent-blue">${{ "%.2f"|format(employee.employee_contribution) }}</td>
+                                                <td class="text-end text-muted-custom">${{ "%.2f"|format(employee.employer_contribution) }}</td>
+                                                <td class="text-end fw-bold text-white">${{ "%.2f"|format(employee.total_esi) }}</td>
+                                            {% elif report_type == 'tds' %}
+                                                <td><span class="font-monospace text-muted-custom">{{ employee.pan_number }}</span></td>
+                                                <td class="text-end text-white">${{ "%.2f"|format(employee.taxable_income) }}</td>
+                                                <td class="text-end fw-bold text-accent-blue">${{ "%.2f"|format(employee.tds_deducted) }}</td>
+                                                <td class="text-center"><span class="badge bg-secondary bg-opacity-25 text-muted-custom">{{ employee.financial_year }}</span></td>
+                                            {% elif report_type == 'pt' %}
+                                                <td>{{ employee.state }}</td>
+                                                <td class="text-end text-white">${{ "%.2f"|format(employee.gross_salary) }}</td>
+                                                <td class="text-end fw-bold text-accent-blue">${{ "%.2f"|format(employee.pt_amount) }}</td>
+                                            {% endif %}
+                                            
+                                            <td class="text-center">
+                                                {% if employee.filing_status == 'Filed' %}
+                                                    <span class="badge badge-filed"><i class="bi bi-check-circle-fill me-1"></i>Filed</span>
+                                                {% else %}
+                                                    <span class="badge badge-pending"><i class="bi bi-clock me-1"></i>Pending</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot>
+                                    <tr class="table-primary border-top border-muted-custom fw-bold text-white" style="background-color: #0F172A;">
+                                        <td colspan="3">Total Summary</td>
+                                        
+                                        {% if report_type == 'pf' %}
+                                            <td class="text-end">${{ "%.2f"|format(report_data.total_pf_wages) }}</td>
+                                            <td class="text-end">${{ "%.2f"|format(report_data.total_employee_contribution) }}</td>
+                                            <td class="text-end">${{ "%.2f"|format(report_data.total_employer_contribution) }}</td>
+                                            <td class="text-end text-accent-blue">${{ "%.2f"|format(report_data.total_pf_amount) }}</td>
+                                        {% elif report_type == 'esi' %}
+                                            <td class="text-end">${{ "%.2f"|format(report_data.total_gross_salary) }}</td>
+                                            <td class="text-end">${{ "%.2f"|format(report_data.total_employee_contribution) }}</td>
+                                            <td class="text-end">${{ "%.2f"|format(report_data.total_employer_contribution) }}</td>
+                                            <td class="text-end text-accent-blue">${{ "%.2f"|format(report_data.total_esi) }}</td>
+                                        {% elif report_type == 'tds' %}
+                                            <td class="text-end">${{ "%.2f"|format(report_data.total_taxable_income) }}</td>
+                                            <td class="text-end text-accent-blue">${{ "%.2f"|format(report_data.total_tds_deducted) }}</td>
+                                            <td></td>
+                                        {% elif report_type == 'pt' %}
+                                            <td class="text-end">${{ "%.2f"|format(report_data.total_gross_salary) }}</td>
+                                            <td class="text-end text-accent-blue">${{ "%.2f"|format(report_data.total_pt_amount) }}</td>
+                                        {% endif %}
+                                        
+                                        <td></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                        
+                        <!-- Empty state within table -->
+                        <div id="noRecordsFoundMsg" class="text-center py-5 d-none">
+                            <i class="bi bi-search text-muted-custom" style="font-size: 2.5rem;"></i>
+                            <h5 class="mt-2 text-white">No Matching Records Found</h5>
+                            <p class="text-muted-custom small">Try adjusting your search criteria or filter query</p>
+                        </div>
+                    {% else %}
+                        <!-- Report Empty State -->
+                        <div class="text-center py-5">
+                            <i class="bi bi-file-earmark-excel text-muted-custom" style="font-size: 3rem;"></i>
+                            <h5 class="mt-3 text-white">No Report Data Generated</h5>
+                            <p class="text-muted-custom">No payroll processing records found for the selected month and year.</p>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- TAB 2: COMPLIANCE CALENDAR -->
+                <div class="tab-pane fade" id="calendar" role="tabpanel" aria-labelledby="calendar-tab">
+                    <h4 class="fw-bold mb-3 text-white">Compliance & Filing Calendar</h4>
+                    <p class="text-muted-custom small mb-4">Statutory deadlines and filing schedule for {{ get_month_name(month) }} {{ year }} filings.</p>
+                    
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="card bg-dark bg-opacity-20 border-muted-custom h-100">
+                                <div class="card-body">
+                                    <h5 class="fw-bold text-white mb-4"><i class="bi bi-calendar-check text-accent-blue me-2"></i>Upcoming Deadlines</h5>
+                                    <div class="list-group list-group-flush">
+                                        {% for deadline in compliance_stats.deadlines %}
+                                        <div class="list-group-item bg-transparent border-muted-custom py-3 px-0">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <h6 class="fw-bold text-white mb-1">{{ deadline.type }}</h6>
+                                                    <span class="small text-muted-custom"><i class="bi bi-clock me-1"></i>Due: {{ deadline.due_date }}</span>
+                                                </div>
+                                                <div>
+                                                    {% if deadline.status == 'Filed' %}
+                                                    <span class="badge badge-filed"><i class="bi bi-check-circle-fill me-1"></i>Filed</span>
+                                                    {% else %}
+                                                    <span class="badge badge-pending"><i class="bi bi-exclamation-circle me-1"></i>Pending</span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-dark bg-opacity-20 border-muted-custom h-100">
+                                <div class="card-body">
+                                    <h5 class="fw-bold text-white mb-4"><i class="bi bi-info-circle text-accent-blue me-2"></i>Statutory Rules Reference</h5>
+                                    <div class="accordion accordion-flush" id="statutoryRulesAccordion">
+                                        <div class="accordion-item bg-transparent border-muted-custom">
+                                            <h2 class="accordion-header" id="flush-headingOne">
+                                                <button class="accordion-button bg-transparent text-white collapsed border-0" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseOne" aria-expanded="false" aria-controls="flush-collapseOne">
+                                                    Provident Fund (PF) Regulations
+                                                </button>
+                                            </h2>
+                                            <div id="flush-collapseOne" class="accordion-collapse collapse" aria-labelledby="flush-headingOne" data-bs-parent="#statutoryRulesAccordion">
+                                                <div class="accordion-body text-muted-custom small">
+                                                    Employees' Provident Fund is a statutory requirement. Both employee and employer contribute 5% of basic salary. Due date is the 15th of the succeeding month.
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="accordion-item bg-transparent border-muted-custom">
+                                            <h2 class="accordion-header" id="flush-headingTwo">
+                                                <button class="accordion-button bg-transparent text-white collapsed border-0" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseTwo" aria-expanded="false" aria-controls="flush-collapseTwo">
+                                                    Employee State Insurance (ESI) Guidelines
+                                                </button>
+                                            </h2>
+                                            <div id="flush-collapseTwo" class="accordion-collapse collapse" aria-labelledby="flush-headingTwo" data-bs-parent="#statutoryRulesAccordion">
+                                                <div class="accordion-body text-muted-custom small">
+                                                    ESI provides medical benefit coverage. Employee contribution is 2% and employer contribution is 3% of gross salary. Due date is the 15th of the succeeding month.
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="accordion-item bg-transparent border-muted-custom">
+                                            <h2 class="accordion-header" id="flush-headingThree">
+                                                <button class="accordion-button bg-transparent text-white collapsed border-0" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseThree" aria-expanded="false" aria-controls="flush-collapseThree">
+                                                    Tax Deducted at Source (TDS) Slabs
+                                                </button>
+                                            </h2>
+                                            <div id="flush-collapseThree" class="accordion-collapse collapse" aria-labelledby="flush-headingThree" data-bs-parent="#statutoryRulesAccordion">
+                                                <div class="accordion-body text-muted-custom small">
+                                                    TDS is calculated on gross salary minus eligible deductions. Deposited monthly before the 7th of the succeeding month. Returns filed quarterly (Form 24Q).
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 3: COMPLIANCE ANALYTICS -->
+                <div class="tab-pane fade" id="analytics" role="tabpanel" aria-labelledby="analytics-tab">
+                    <h4 class="fw-bold mb-3 text-white">Compliance Analytics Dashboard</h4>
+                    <p class="text-muted-custom small mb-4">Statutory tax contributions, PF reserves, and monthly compliance metrics.</p>
+                    
+                    <div class="row g-4">
+                        <div class="col-md-8">
+                            <div class="card bg-dark bg-opacity-20 border-muted-custom">
+                                <div class="card-body">
+                                    <h6 class="fw-bold text-white mb-3">Statutory Contributions Trend (Last 5 Months)</h6>
+                                    <div style="height: 280px;">
+                                        <canvas id="complianceTrendChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-dark bg-opacity-20 border-muted-custom">
+                                <div class="card-body">
+                                    <h6 class="fw-bold text-white mb-3">Filing Distribution By Area</h6>
+                                    <div style="height: 280px;">
+                                        <canvas id="complianceDistributionChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 4: FILING HISTORY & AUDIT LOG -->
+                <div class="tab-pane fade" id="audit" role="tabpanel" aria-labelledby="audit-tab">
+                    <h4 class="fw-bold mb-3 text-white">Filing Registry & Audit History</h4>
+                    <p class="text-muted-custom small mb-4">Historical record of all tax and statutory filings completed in the system.</p>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-hover table-dark-custom align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Filing ID</th>
+                                    <th>Report Type</th>
+                                    <th>Filing Period</th>
+                                    <th class="text-center">Employees Covered</th>
+                                    <th class="text-end">Amount Paid</th>
+                                    <th>Filed By</th>
+                                    <th>Filing Date</th>
+                                    <th>Acknowledgment No.</th>
+                                    <th class="text-center">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if compliance_filings %}
+                                    {% for filing in compliance_filings %}
+                                    <tr>
+                                        <td>#{{ filing.id }}</td>
+                                        <td class="fw-bold text-white text-uppercase">{{ filing.report_type }}</td>
+                                        <td>{{ get_month_name(filing.month) }} {{ filing.year }}</td>
+                                        <td class="text-center">{{ filing.employees_covered }}</td>
+                                        <td class="text-end fw-semibold text-accent-blue">${{ "%.2f"|format(filing.total_amount) }}</td>
+                                        <td>{{ filing.generated_by }}</td>
+                                        <td class="small text-muted-custom">{{ filing.generated_date }}</td>
+                                        <td><span class="font-monospace small text-white">{{ filing.receipt_number or 'N/A' }}</span></td>
+                                        <td class="text-center">
+                                            <span class="badge badge-filed"><i class="bi bi-shield-fill-check me-1"></i>Filed</span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="9" class="text-center py-4 text-muted-custom">No completed filings in database.</td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 1. Interactive Search & Filtering in Statutory Table
+    const searchInput = document.getElementById('employeeSearchInput');
+    const stateFilter = document.getElementById('stateFilterSelect');
+    const departmentFilter = document.getElementById('departmentFilterSelect');
+    const tableRows = document.querySelectorAll('#complianceRecordsTable tbody tr');
+    const tableEl = document.getElementById('complianceRecordsTable');
+    const noRecordsMsg = document.getElementById('noRecordsFoundMsg');
+
+    function filterTable() {
+        const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+        const stateVal = stateFilter ? stateFilter.value : '';
+        // Department is a custom attribute or matched from the list
+        let matchesCount = 0;
+
+        tableRows.forEach(row => {
+            const name = row.dataset.name ? row.dataset.name.toLowerCase() : '';
+            const id = row.dataset.id ? row.dataset.id.toLowerCase() : '';
+            const state = row.dataset.state ? row.dataset.state : '';
+            const uan = row.dataset.uan ? row.dataset.uan.toLowerCase() : '';
+            const esi = row.dataset.esi ? row.dataset.esi.toLowerCase() : '';
+            const pan = row.dataset.pan ? row.dataset.pan.toLowerCase() : '';
+            
+            const matchesQuery = !query || name.includes(query) || id.includes(query) || uan.includes(query) || esi.includes(query) || pan.includes(query);
+            const matchesState = !stateVal || state === stateVal;
+
+            if (matchesQuery && matchesState) {
+                row.classList.remove('d-none');
+                matchesCount++;
+            } else {
+                row.classList.add('d-none');
+            }
+        });
+
+        if (tableEl) {
+            if (matchesCount === 0) {
+                tableEl.classList.add('d-none');
+                if (noRecordsMsg) noRecordsMsg.classList.remove('d-none');
+            } else {
+                tableEl.classList.remove('d-none');
+                if (noRecordsMsg) noRecordsMsg.classList.add('d-none');
+            }
+        }
+    }
+
+    if (searchInput) searchInput.addEventListener('input', filterTable);
+    if (stateFilter) stateFilter.addEventListener('change', filterTable);
+
+    // 2. Initialize Charts
+    const trendCtx = document.getElementById('complianceTrendChart');
+    if (trendCtx) {
+        new Chart(trendCtx.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: ['Jan 2026', 'Feb 2026', 'Mar 2026', 'Apr 2026', 'May 2026'],
+                datasets: [
+                    {
+                        label: 'PF Contribution',
+                        data: [12450.00, 12600.00, 12850.00, 13100.00, 13150.00],
+                        borderColor: '#38BDF8',
+                        backgroundColor: 'rgba(56, 189, 248, 0.1)',
+                        tension: 0.3,
+                        fill: true
+                    },
+                    {
+                        label: 'ESI Contribution',
+                        data: [6200.50, 6310.20, 6420.00, 6550.00, 6580.00],
+                        borderColor: '#10B981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        tension: 0.3,
+                        fill: true
+                    },
+                    {
+                        label: 'TDS Deducted',
+                        data: [18500.00, 18900.00, 19200.00, 19500.00, 19600.00],
+                        borderColor: '#F59E0B',
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                        tension: 0.3,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: { color: '#94A3B8' }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { color: '#334155' },
+                        ticks: { color: '#94A3B8' }
+                    },
+                    y: {
+                        grid: { color: '#334155' },
+                        ticks: {
+                            color: '#94A3B8',
+                            callback: function(value) { return '$' + value; }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    const distCtx = document.getElementById('complianceDistributionChart');
+    if (distCtx) {
+        new Chart(distCtx.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: ['PF Filed', 'ESI Filed', 'TDS Filed', 'PT Filed'],
+                datasets: [{
+                    data: [13150.00, 6580.00, 19600.00, 2400.00],
+                    backgroundColor: ['#38BDF8', '#10B981', '#F59E0B', '#A855F7'],
+                    borderWidth: 1,
+                    borderColor: '#1E293B'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { color: '#94A3B8', boxWidth: 12 }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

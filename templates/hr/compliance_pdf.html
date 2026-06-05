@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ report_type|upper }} Compliance Report - {{ get_month_name(month) }} {{ year }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.4;
+            color: #333;
+            margin: 0;
+            padding: 10px;
+        }
+        .container {
+            width: 100%;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #333;
+        }
+        .report-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin: 5px 0;
+            color: #0066cc;
+        }
+        .report-subtitle {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            font-size: 11px;
+        }
+        th, td {
+            border: 1px solid #aaa;
+            padding: 6px 6px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        .amount {
+            text-align: right;
+        }
+        .total-row {
+            font-weight: bold;
+            background-color: #e6e6e6;
+        }
+        .summary {
+            margin-top: 20px;
+            border: 1px solid #aaa;
+            padding: 10px;
+            background-color: #f9f9f9;
+            font-size: 12px;
+        }
+        .summary h2 {
+            font-size: 14px;
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: #333;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 3px;
+        }
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 10px;
+            color: #777;
+            border-top: 1px solid #ccc;
+            padding-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="report-title">
+                {% if report_type == 'pf' %}
+                    Provident Fund (PF) Report
+                {% elif report_type == 'esi' %}
+                    Employee State Insurance (ESI) Report
+                {% elif report_type == 'tds' %}
+                    Tax Deducted at Source (TDS) Report
+                {% elif report_type == 'pt' %}
+                    Professional Tax (PT) Report
+                {% endif %}
+            </div>
+            <div class="report-subtitle">
+                For the period: {{ get_month_name(month) }} {{ year }} | Status: {{ report_data.filing_status }}
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                {% if report_type == 'pf' %}
+                    <tr>
+                        <th>Emp ID</th>
+                        <th>Employee Name</th>
+                        <th>UAN Number</th>
+                        <th class="amount">PF Wages</th>
+                        <th class="amount">EE Contribution</th>
+                        <th class="amount">ER Contribution</th>
+                        <th class="amount">Total PF Amount</th>
+                    </tr>
+                {% elif report_type == 'esi' %}
+                    <tr>
+                        <th>Emp ID</th>
+                        <th>Employee Name</th>
+                        <th>ESI Number</th>
+                        <th class="amount">Gross Salary</th>
+                        <th class="amount">EE Contribution</th>
+                        <th class="amount">ER Contribution</th>
+                        <th class="amount">Total ESI</th>
+                    </tr>
+                {% elif report_type == 'tds' %}
+                    <tr>
+                        <th>Emp ID</th>
+                        <th>Employee Name</th>
+                        <th>PAN Number</th>
+                        <th class="amount">Taxable Income</th>
+                        <th class="amount">TDS Deducted</th>
+                        <th>Financial Year</th>
+                    </tr>
+                {% elif report_type == 'pt' %}
+                    <tr>
+                        <th>Emp ID</th>
+                        <th>Employee Name</th>
+                        <th>State</th>
+                        <th class="amount">Gross Salary</th>
+                        <th class="amount">PT Amount</th>
+                    </tr>
+                {% endif %}
+            </thead>
+            <tbody>
+                {% for employee in report_data.employees %}
+                    <tr>
+                        <td>{{ employee.id }}</td>
+                        <td>{{ employee.name }}</td>
+                        
+                        {% if report_type == 'pf' %}
+                            <td>{{ employee.uan_number }}</td>
+                            <td class="amount">${{ "%.2f"|format(employee.pf_wages) }}</td>
+                            <td class="amount">${{ "%.2f"|format(employee.employee_contribution) }}</td>
+                            <td class="amount">${{ "%.2f"|format(employee.employer_contribution) }}</td>
+                            <td class="amount">${{ "%.2f"|format(employee.total_pf) }}</td>
+                        {% elif report_type == 'esi' %}
+                            <td>{{ employee.esi_number }}</td>
+                            <td class="amount">${{ "%.2f"|format(employee.gross_salary) }}</td>
+                            <td class="amount">${{ "%.2f"|format(employee.employee_contribution) }}</td>
+                            <td class="amount">${{ "%.2f"|format(employee.employer_contribution) }}</td>
+                            <td class="amount">${{ "%.2f"|format(employee.total_esi) }}</td>
+                        {% elif report_type == 'tds' %}
+                            <td>{{ employee.pan_number }}</td>
+                            <td class="amount">${{ "%.2f"|format(employee.taxable_income) }}</td>
+                            <td class="amount">${{ "%.2f"|format(employee.tds_deducted) }}</td>
+                            <td>{{ employee.financial_year }}</td>
+                        {% elif report_type == 'pt' %}
+                            <td>{{ employee.state }}</td>
+                            <td class="amount">${{ "%.2f"|format(employee.gross_salary) }}</td>
+                            <td class="amount">${{ "%.2f"|format(employee.pt_amount) }}</td>
+                        {% endif %}
+                    </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr class="total-row">
+                    <td colspan="3">Total</td>
+                    {% if report_type == 'pf' %}
+                        <td class="amount">${{ "%.2f"|format(report_data.total_pf_wages) }}</td>
+                        <td class="amount">${{ "%.2f"|format(report_data.total_employee_contribution) }}</td>
+                        <td class="amount">${{ "%.2f"|format(report_data.total_employer_contribution) }}</td>
+                        <td class="amount">${{ "%.2f"|format(report_data.total_pf_amount) }}</td>
+                    {% elif report_type == 'esi' %}
+                        <td class="amount">${{ "%.2f"|format(report_data.total_gross_salary) }}</td>
+                        <td class="amount">${{ "%.2f"|format(report_data.total_employee_contribution) }}</td>
+                        <td class="amount">${{ "%.2f"|format(report_data.total_employer_contribution) }}</td>
+                        <td class="amount">${{ "%.2f"|format(report_data.total_esi) }}</td>
+                    {% elif report_type == 'tds' %}
+                        <td class="amount">${{ "%.2f"|format(report_data.total_taxable_income) }}</td>
+                        <td class="amount">${{ "%.2f"|format(report_data.total_tds_deducted) }}</td>
+                        <td></td>
+                    {% elif report_type == 'pt' %}
+                        <td class="amount">${{ "%.2f"|format(report_data.total_gross_salary) }}</td>
+                        <td class="amount">${{ "%.2f"|format(report_data.total_pt_amount) }}</td>
+                    {% endif %}
+                </tr>
+            </tfoot>
+        </table>
+
+        <div class="summary">
+            <h2>Report Summary</h2>
+            <div class="summary-item">
+                <span>Total Employees:</span>
+                <span>{{ report_data.total_employees }}</span>
+            </div>
+            <div class="summary-item">
+                <span>Total statutory contribution/tax:</span>
+                <span>${{ "%.2f"|format(report_data.total_contribution) }}</span>
+            </div>
+            <div class="summary-item">
+                <span>Report Period:</span>
+                <span>{{ get_month_name(month) }} {{ year }}</span>
+            </div>
+            <div class="summary-item">
+                <span>Filing Status:</span>
+                <span>{{ report_data.filing_status }} {% if report_data.receipt_number %}(Ref: {{ report_data.receipt_number }}){% endif %}</span>
+            </div>
+            <div class="summary-item">
+                <span>Generated Date:</span>
+                <span>{{ now.strftime('%d %b %Y %H:%M:%S') }}</span>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>This is a computer-generated statutory compliance report and does not require a physical signature.</p>
+            <p>PayrollPro Compliance Services - Confidential & Proprietary</p>
+        </div>
+    </div>
+</body>
+</html>

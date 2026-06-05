@@ -1,0 +1,788 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Employee Profile - PayrollPro{% endblock %}
+
+{% block content %}
+<style>
+    .profile-bg {
+        background-color: #0F172A;
+        color: #F8FAFC;
+    }
+    .profile-card {
+        background-color: #1E293B;
+        border: 1px solid #334155;
+        border-radius: 0.75rem;
+    }
+    .profile-card:hover {
+        border-color: #475569;
+    }
+    .text-muted-custom {
+        color: #94A3B8;
+    }
+    .text-accent-blue {
+        color: #38BDF8;
+    }
+    .border-muted-custom {
+        border-color: #334155;
+    }
+    .form-control-custom {
+        background-color: #0F172A;
+        border: 1px solid #334155;
+        color: #F8FAFC;
+    }
+    .form-control-custom:focus {
+        background-color: #0F172A;
+        border-color: #38BDF8;
+        color: #F8FAFC;
+        box-shadow: 0 0 0 0.25rem rgba(56, 189, 248, 0.25);
+    }
+    .nav-pills-custom .nav-link {
+        color: #94A3B8;
+        border-radius: 0.5rem;
+        padding: 0.75rem 1.25rem;
+        font-weight: 500;
+        text-align: left;
+        transition: all 0.2s ease;
+    }
+    .nav-pills-custom .nav-link:hover {
+        color: #F8FAFC;
+        background-color: #334155;
+    }
+    .nav-pills-custom .nav-link.active {
+        color: #0F172A;
+        background-color: #38BDF8;
+    }
+    .table-dark-custom {
+        color: #F8FAFC;
+        border-color: #334155;
+    }
+    .table-dark-custom th {
+        background-color: #0F172A;
+        color: #38BDF8;
+        font-weight: 600;
+        border-bottom: 2px solid #334155;
+    }
+    .table-dark-custom td {
+        background-color: #1E293B;
+        border-bottom: 1px solid #334155;
+    }
+    .corporate-badge {
+        width: 280px;
+        background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
+        border: 2px solid #38BDF8;
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 8px 30px rgba(56, 189, 248, 0.15);
+        color: #FFFFFF;
+        position: relative;
+        overflow: hidden;
+    }
+    .corporate-badge::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 6px;
+        background-color: #38BDF8;
+    }
+    .badge-photo {
+        width: 90px;
+        height: 90px;
+        border-radius: 50%;
+        border: 3px solid #38BDF8;
+        background-color: #334155;
+        color: #38BDF8;
+        font-size: 2.2rem;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 16px;
+    }
+</style>
+
+<div class="container-fluid py-2 profile-bg">
+    <!-- Breadcrumb -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-0 text-white"><i class="bi bi-person-badge text-accent-blue me-2"></i>Employee Profile Center</h2>
+            <p class="text-muted-custom mb-0">Roster profile details for <strong>{{ employee.name }}</strong> ({{ employee.employee_code or 'N/A' }})</p>
+        </div>
+        <a href="{{ url_for('employee_management') }}" class="btn btn-outline-light border-muted-custom btn-sm text-white">
+            <i class="bi bi-arrow-left me-1"></i> Back to Directory
+        </a>
+    </div>
+
+    <!-- Main Content Row -->
+    <div class="row">
+        <!-- Sidebar Pills Navigation -->
+        <div class="col-md-3 mb-4">
+            <div class="card profile-card p-3 mb-4">
+                <div class="text-center py-3">
+                    <div class="badge-photo">
+                        {{ employee.name[:2]|upper }}
+                    </div>
+                    <h5 class="fw-bold mb-1 text-white">{{ employee.name }}</h5>
+                    <p class="text-accent-blue small mb-1">{{ employee.designation }}</p>
+                    <p class="text-muted-custom small mb-0">{{ employee.department }}</p>
+                    <span class="badge mt-2 {% if employee.status == 'active' %}bg-success bg-opacity-25 text-success border border-success border-opacity-30{% else %}bg-danger bg-opacity-25 text-danger border border-danger border-opacity-30{% endif %}">
+                        {{ employee.status|capitalize }}
+                    </span>
+                </div>
+                <hr class="border-muted-custom">
+                <div class="nav flex-column nav-pills nav-pills-custom gap-2" id="v-pills-tab" role="tablist" aria-orientation="vertical">
+                    <button class="nav-link active" id="profile-info-tab" data-bs-toggle="pill" data-bs-target="#profile-info" type="button" role="tab" aria-controls="profile-info" aria-selected="true">
+                        <i class="bi bi-person-lines-fill me-2"></i>Profile Details
+                    </button>
+                    <button class="nav-link" id="profile-docs-tab" data-bs-toggle="pill" data-bs-target="#profile-docs" type="button" role="tab" aria-controls="profile-docs" aria-selected="false">
+                        <i class="bi bi-folder-fill me-2"></i>Statutory Documents
+                    </button>
+                    <button class="nav-link" id="profile-attendance-tab" data-bs-toggle="pill" data-bs-target="#profile-attendance" type="button" role="tab" aria-controls="profile-attendance" aria-selected="false">
+                        <i class="bi bi-calendar3 me-2"></i>Attendance & Leaves
+                    </button>
+                    <button class="nav-link" id="profile-payroll-tab" data-bs-toggle="pill" data-bs-target="#profile-payroll" type="button" role="tab" aria-controls="profile-payroll" aria-selected="false">
+                        <i class="bi bi-cash-stack me-2"></i>Payroll & Salary
+                    </button>
+                    <button class="nav-link" id="profile-lifecycle-tab" data-bs-toggle="pill" data-bs-target="#profile-lifecycle" type="button" role="tab" aria-controls="profile-lifecycle" aria-selected="false">
+                        <i class="bi bi-signpost-split-fill me-2"></i>Career Lifecycle
+                    </button>
+                    <button class="nav-link" id="profile-badge-tab" data-bs-toggle="pill" data-bs-target="#profile-badge" type="button" role="tab" aria-controls="profile-badge" aria-selected="false">
+                        <i class="bi bi-card-heading me-2"></i>Company ID Badge
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Content Window -->
+        <div class="col-md-9 mb-4">
+            <div class="card profile-card p-4">
+                <div class="tab-content" id="v-pills-tabContent">
+                    
+                    <!-- TAB 1: PROFILE INFO -->
+                    <div class="tab-pane fade show active" id="profile-info" role="tabpanel" aria-labelledby="profile-info-tab">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h4 class="fw-bold mb-0 text-white"><i class="bi bi-person-lines-fill text-accent-blue me-2"></i>Edit Profile Details</h4>
+                            <a href="{{ url_for('download_employee_profile_pdf', employee_id=employee.id) }}" target="_blank" class="btn btn-sm btn-outline-light border-muted-custom">
+                                <i class="bi bi-filetype-pdf me-1"></i> Export Profile Sheet
+                            </a>
+                        </div>
+                        <form method="POST" action="{{ url_for('edit_employee', employee_id=employee.id) }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="action_type" value="update_profile">
+                            
+                            <!-- Section 1: Personal Info -->
+                            <h6 class="fw-bold text-accent-blue mb-3 border-bottom border-muted-custom pb-2">Personal Information</h6>
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted-custom">Full Name</label>
+                                    <input type="text" name="name" class="form-control form-control-custom" value="{{ employee.name }}" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted-custom">Gender</label>
+                                    <select name="gender" class="form-select form-control-custom">
+                                        <option value="Male" {% if employee.gender == 'Male' %}selected{% endif %}>Male</option>
+                                        <option value="Female" {% if employee.gender == 'Female' %}selected{% endif %}>Female</option>
+                                        <option value="Other" {% if employee.gender == 'Other' %}selected{% endif %}>Other</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted-custom">Date of Birth</label>
+                                    <input type="text" name="date_of_birth" class="form-control form-control-custom" value="{{ employee.date_of_birth or '' }}" placeholder="YYYY-MM-DD">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted-custom">Marital Status</label>
+                                    <select name="marital_status" class="form-select form-control-custom">
+                                        <option value="Single" {% if employee.marital_status == 'Single' %}selected{% endif %}>Single</option>
+                                        <option value="Married" {% if employee.marital_status == 'Married' %}selected{% endif %}>Married</option>
+                                        <option value="Divorced" {% if employee.marital_status == 'Divorced' %}selected{% endif %}>Divorced</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted-custom">Blood Group</label>
+                                    <input type="text" name="blood_group" class="form-control form-control-custom" value="{{ employee.blood_group or 'O+' }}">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted-custom">Nationality</label>
+                                    <input type="text" name="nationality" class="form-control form-control-custom" value="{{ employee.nationality or 'Indian' }}">
+                                </div>
+                            </div>
+
+                            <!-- Section 2: Contact Info -->
+                            <h6 class="fw-bold text-accent-blue mb-3 border-bottom border-muted-custom pb-2">Contact Details</h6>
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted-custom">Mobile Number</label>
+                                    <input type="text" name="phone" class="form-control form-control-custom" value="{{ employee.phone or '' }}">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted-custom">Alternate Mobile Number</label>
+                                    <input type="text" name="alternate_phone" class="form-control form-control-custom" value="{{ employee.alternate_phone or '' }}">
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label small text-muted-custom">Permanent Address</label>
+                                    <textarea name="address" class="form-control form-control-custom" rows="2">{{ employee.address or '' }}</textarea>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted-custom">Emergency Contact Name & Mobile</label>
+                                    <input type="text" name="emergency_contact" class="form-control form-control-custom" value="{{ employee.emergency_contact or '' }}">
+                                </div>
+                            </div>
+
+                            <!-- Section 3: Employment Info -->
+                            <h6 class="fw-bold text-accent-blue mb-3 border-bottom border-muted-custom pb-2">Employment Parameters</h6>
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted-custom">Employee Code</label>
+                                    <input type="text" name="employee_code" class="form-control form-control-custom" value="{{ employee.employee_code or '' }}" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted-custom">Department</label>
+                                    <input type="text" name="department" class="form-control form-control-custom" value="{{ employee.department }}" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted-custom">Designation</label>
+                                    <input type="text" name="designation" class="form-control form-control-custom" value="{{ employee.designation }}" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted-custom">Branch Office</label>
+                                    <input type="text" name="branch" class="form-control form-control-custom" value="{{ employee.branch or 'Main Headquarters' }}">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted-custom">Reporting Manager</label>
+                                    <input type="text" name="reporting_manager" class="form-control form-control-custom" value="{{ employee.reporting_manager or 'Admin User' }}">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted-custom">Employment Type</label>
+                                    <select name="employee_type" class="form-select form-control-custom">
+                                        <option value="Full-Time" {% if employee.employee_type == 'Full-Time' %}selected{% endif %}>Full-Time</option>
+                                        <option value="Contract" {% if employee.employee_type == 'Contract' %}selected{% endif %}>Contract</option>
+                                        <option value="Internship" {% if employee.employee_type == 'Internship' %}selected{% endif %}>Internship</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted-custom">Probation Status</label>
+                                    <select name="probation_status" class="form-select form-control-custom">
+                                        <option value="Probation" {% if employee.probation_status == 'Probation' %}selected{% endif %}>Probation</option>
+                                        <option value="Confirmed" {% if employee.probation_status == 'Confirmed' %}selected{% endif %}>Confirmed</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted-custom">Filing Status</label>
+                                    <select name="status" class="form-select form-control-custom">
+                                        <option value="active" {% if employee.status == 'active' %}selected{% endif %}>Active</option>
+                                        <option value="inactive" {% if employee.status == 'inactive' %}selected{% endif %}>Inactive</option>
+                                        <option value="resigned" {% if employee.status == 'resigned' %}selected{% endif %}>Resigned</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Section 4: Payroll Info -->
+                            <h6 class="fw-bold text-accent-blue mb-3 border-bottom border-muted-custom pb-2">Payroll & Bank Accounts</h6>
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted-custom">Basic Salary ($)</label>
+                                    <input type="number" name="salary" step="0.01" class="form-control form-control-custom" value="{{ employee.basic_salary }}" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted-custom">Salary Structure Class</label>
+                                    <input type="text" name="salary_structure" class="form-control form-control-custom" value="{{ employee.salary_structure or 'Standard Class' }}">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted-custom">Bank Account Number</label>
+                                    <input type="text" name="bank_account" class="form-control form-control-custom" value="{{ employee.bank_account or '' }}">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted-custom">IFSC / Routing Code</label>
+                                    <input type="text" name="ifsc_code" class="form-control form-control-custom" value="{{ employee.ifsc_code or '' }}">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted-custom">Aadhaar Number</label>
+                                    <input type="text" name="aadhaar_number" class="form-control form-control-custom" value="{{ employee.aadhaar_number or '' }}">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted-custom">PAN Number</label>
+                                    <input type="text" name="pan_number" class="form-control form-control-custom" value="{{ employee.pan_number or '' }}">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted-custom">UAN Number</label>
+                                    <input type="text" name="uan_number" class="form-control form-control-custom" value="{{ employee.uan_number or '' }}">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted-custom">ESI Number</label>
+                                    <input type="text" name="esi_number" class="form-control form-control-custom" value="{{ employee.esi_number or '' }}">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted-custom">PF Registration Number</label>
+                                    <input type="text" name="pf_number" class="form-control form-control-custom" value="{{ employee.pf_number or '' }}">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted-custom">Tax Information</label>
+                                    <input type="text" name="tax_info" class="form-control form-control-custom" value="{{ employee.tax_info or 'Single Filer' }}">
+                                </div>
+                            </div>
+
+                            <div class="text-end">
+                                <button type="submit" class="btn btn-primary bg-gradient">
+                                    <i class="bi bi-save me-1"></i> Save Changes
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- TAB 2: DOCUMENTS -->
+                    <div class="tab-pane fade" id="profile-docs" role="tabpanel" aria-labelledby="profile-docs-tab">
+                        <h4 class="fw-bold mb-3 text-white"><i class="bi bi-folder-fill text-accent-blue me-2"></i>Statutory Documents Manager</h4>
+                        <p class="text-muted-custom small mb-4">Upload and delete certificates, identity cards, or letters associated with the employee.</p>
+
+                        <!-- simulated upload form -->
+                        <div class="card bg-dark bg-opacity-20 border-muted-custom mb-4">
+                            <div class="card-body">
+                                <h6 class="fw-bold text-white mb-3">Upload Document (Simulated)</h6>
+                                <form method="POST" action="{{ url_for('edit_employee', employee_id=employee.id) }}" class="row g-2 align-items-end">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="action_type" value="upload_doc">
+                                    <div class="col-md-5">
+                                        <label class="form-label small text-muted-custom">Document Category</label>
+                                        <select name="doc_type" class="form-select form-control-custom" required>
+                                            <option value="Aadhaar Card">Aadhaar Card</option>
+                                            <option value="PAN Card">PAN Card</option>
+                                            <option value="Resume">Resume</option>
+                                            <option value="Offer Letter">Offer Letter</option>
+                                            <option value="Joining Letter">Joining Letter</option>
+                                            <option value="Educational Certificate">Educational Certificate</option>
+                                            <option value="Experience Certificate">Experience Certificate</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-5">
+                                        <label class="form-label small text-muted-custom">Select File Name</label>
+                                        <input type="text" name="file_name" class="form-control form-control-custom" placeholder="e.g. college_degree.pdf" required>
+                                    </div>
+                                    <div class="col-md-2 d-grid">
+                                        <button type="submit" class="btn btn-primary bg-gradient btn-sm py-2">
+                                            <i class="bi bi-upload me-1"></i> Upload
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Documents list -->
+                        <div class="table-responsive">
+                            <table class="table table-hover table-dark-custom align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>Document Category</th>
+                                        <th>File Name</th>
+                                        <th>Uploaded Date</th>
+                                        <th>Size</th>
+                                        <th class="text-center">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% if documents %}
+                                        {% for doc in documents %}
+                                            <tr>
+                                                <td class="fw-bold text-white">{{ doc.document_type }}</td>
+                                                <td class="font-monospace small text-muted-custom">{{ doc.file_name }}</td>
+                                                <td>{{ doc.uploaded_date }}</td>
+                                                <td>{{ doc.file_size }}</td>
+                                                <td class="text-center">
+                                                    <div class="d-flex justify-content-center gap-2">
+                                                        <a href="#" class="btn btn-sm btn-outline-light border-muted-custom py-0 px-2" onclick="alert('Downloading file {{ doc.file_name }} (simulated)')">
+                                                            <i class="bi bi-download"></i>
+                                                        </a>
+                                                        <form method="POST" action="{{ url_for('edit_employee', employee_id=employee.id) }}" onsubmit="return confirm('Delete document?');">
+                                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                            <input type="hidden" name="action_type" value="delete_doc">
+                                                            <input type="hidden" name="doc_id" value="{{ doc.id }}">
+                                                            <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2">
+                                                                <i class="bi bi-trash"></i>
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    {% else %}
+                                        <tr>
+                                            <td colspan="5" class="text-center py-4 text-muted-custom">No statutory documents uploaded.</td>
+                                        </tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- TAB 3: ATTENDANCE & LEAVES -->
+                    <div class="tab-pane fade" id="profile-attendance" role="tabpanel" aria-labelledby="profile-attendance-tab">
+                        <h4 class="fw-bold mb-3 text-white"><i class="bi bi-calendar3 text-accent-blue me-2"></i>Attendance & Leave Integration</h4>
+                        
+                        <div class="row g-3 mb-4 text-center">
+                            <div class="col-md-3 col-6">
+                                <div class="bg-success bg-opacity-10 text-success p-3 rounded border border-success border-opacity-20">
+                                    <span class="small text-muted-custom block d-block">Present/WFH</span>
+                                    <strong class="fs-4">{{ total_present }} Days</strong>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <div class="bg-danger bg-opacity-10 text-danger p-3 rounded border border-danger border-opacity-20">
+                                    <span class="small text-muted-custom block d-block">Absent</span>
+                                    <strong class="fs-4">{{ total_absent }} Days</strong>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <div class="bg-warning bg-opacity-10 text-warning p-3 rounded border border-warning border-opacity-20">
+                                    <span class="small text-muted-custom block d-block">Half Days</span>
+                                    <strong class="fs-4">{{ total_half_day }} Days</strong>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <div class="bg-primary bg-opacity-10 text-accent-blue p-3 rounded border border-primary border-opacity-20">
+                                    <span class="small text-muted-custom block d-block">Attendance Ratio</span>
+                                    <strong class="fs-4">{{ attendance_pct }}%</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Accordion for logs -->
+                        <div class="accordion accordion-flush" id="attendanceLeaveAccordion">
+                            <div class="accordion-item bg-transparent border-muted-custom">
+                                <h2 class="accordion-header" id="flush-attendanceLogHeader">
+                                    <button class="accordion-button bg-transparent text-white collapsed border-0" type="button" data-bs-toggle="collapse" data-bs-target="#flush-attendanceLogPane" aria-expanded="false" aria-controls="flush-attendanceLogPane">
+                                        View Complete Attendance History (Last 30 Days)
+                                    </button>
+                                </h2>
+                                <div id="flush-attendanceLogPane" class="accordion-collapse collapse" aria-labelledby="flush-attendanceLogHeader" data-bs-parent="#attendanceLeaveAccordion">
+                                    <div class="accordion-body">
+                                        <div class="table-responsive" style="max-height: 250px;">
+                                            <table class="table table-sm table-dark-custom align-middle small mb-0">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Date</th>
+                                                        <th>Shift / Loc</th>
+                                                        <th>Status</th>
+                                                        <th>Hours</th>
+                                                        <th>Notes</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for att in attendance_history %}
+                                                    <tr>
+                                                        <td>{{ att.date }}</td>
+                                                        <td>{{ att.shift or 'General' }} | {{ att.location or 'Office' }}</td>
+                                                        <td>
+                                                            <span class="badge {% if att.status in ['present','wfh'] %}bg-success bg-opacity-15 text-success{% else %}bg-danger bg-opacity-15 text-danger{% endif %} border border-opacity-10">
+                                                                {{ att.status|capitalize }}
+                                                            </span>
+                                                        </td>
+                                                        <td>{{ att.working_hours or '8.0' }} hrs</td>
+                                                        <td class="text-muted-custom small">{{ att.note or 'N/A' }}</td>
+                                                    </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="accordion-item bg-transparent border-muted-custom">
+                                <h2 class="accordion-header" id="flush-leaveHistoryHeader">
+                                    <button class="accordion-button bg-transparent text-white collapsed border-0" type="button" data-bs-toggle="collapse" data-bs-target="#flush-leaveHistoryPane" aria-expanded="false" aria-controls="flush-leaveHistoryPane">
+                                        View Leaves History & Pending Requests
+                                    </button>
+                                </h2>
+                                <div id="flush-leaveHistoryPane" class="accordion-collapse collapse" aria-labelledby="flush-leaveHistoryHeader" data-bs-parent="#attendanceLeaveAccordion">
+                                    <div class="accordion-body">
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-dark-custom align-middle small mb-0">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Leave Type</th>
+                                                        <th>Dates</th>
+                                                        <th>Reason</th>
+                                                        <th class="text-center">Status</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% if leave_history %}
+                                                        {% for leave in leave_history %}
+                                                        <tr>
+                                                            <td><span class="badge bg-secondary bg-opacity-25 text-white">{{ leave.leave_type|capitalize }}</span></td>
+                                                            <td>{{ leave.start_date }} to {{ leave.end_date }}</td>
+                                                            <td>{{ leave.reason }}</td>
+                                                            <td class="text-center">
+                                                                <span class="badge {% if leave.status == 'approved' %}badge-filed{% else %}badge-pending{% endif %}">
+                                                                    {{ leave.status|capitalize }}
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                        {% endfor %}
+                                                    {% else %}
+                                                        <tr>
+                                                            <td colspan="4" class="text-center py-3 text-muted-custom">No leave applications lodged.</td>
+                                                        </tr>
+                                                    {% endif %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 4: PAYROLL & SALARY -->
+                    <div class="tab-pane fade" id="profile-payroll" role="tabpanel" aria-labelledby="profile-payroll-tab">
+                        <h4 class="fw-bold mb-3 text-white"><i class="bi bi-cash-stack text-accent-blue me-2"></i>Payroll & Salary Integration</h4>
+                        
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <div class="card bg-dark bg-opacity-20 border-muted-custom">
+                                    <div class="card-body">
+                                        <h6 class="text-muted-custom small fw-semibold">Current Basic Monthly Salary</h6>
+                                        <h3 class="fw-bold my-2 text-white">${{ "%.2f"|format(employee.basic_salary) }}</h3>
+                                        <span class="small text-muted-custom">Structure Class: <strong>{{ employee.salary_structure or 'Standard Class' }}</strong></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card bg-dark bg-opacity-20 border-muted-custom">
+                                    <div class="card-body">
+                                        <h6 class="text-muted-custom small fw-semibold">Estimated Net Payout</h6>
+                                        <h3 class="fw-bold my-2 text-accent-blue">
+                                            ${{ "%.2f"|format(employee.basic_salary * 0.85) }}
+                                        </h3>
+                                        <span class="small text-muted-custom">Bank account ending: <strong>...{{ employee.bank_account[-4:] if employee.bank_account else 'N/A' }}</strong></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <h6 class="fw-bold text-white mb-3">Payslip Release History</h6>
+                        <div class="table-responsive">
+                            <table class="table table-hover table-dark-custom align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>Period</th>
+                                        <th class="text-end">Basic Salary</th>
+                                        <th class="text-end">Allowances</th>
+                                        <th class="text-end">Deductions</th>
+                                        <th class="text-end">Net Salary Paid</th>
+                                        <th class="text-center">Download</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% if payslip_history %}
+                                        {% for payslip in payslip_history %}
+                                        <tr>
+                                            <td>{{ get_month_name(payslip.month) }} {{ payslip.year }}</td>
+                                            <td class="text-end text-white">${{ "%.2f"|format(payslip.basic_salary) }}</td>
+                                            <td class="text-end text-success">+${{ "%.2f"|format(payslip.allowances) }}</td>
+                                            <td class="text-end text-danger">-${{ "%.2f"|format(payslip.deductions) }}</td>
+                                            <td class="text-end fw-bold text-white">${{ "%.2f"|format(payslip.net_salary) }}</td>
+                                            <td class="text-center">
+                                                <a href="{{ url_for('download_payslip', payslip_id=payslip.id) }}" target="_blank" class="btn btn-sm btn-outline-light border-muted-custom py-0 px-2">
+                                                    <i class="bi bi-download"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    {% else %}
+                                        <tr>
+                                            <td colspan="6" class="text-center py-4 text-muted-custom">No payslip release history recorded.</td>
+                                        </tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- TAB 5: LIFECYCLE ACTIONS -->
+                    <div class="tab-pane fade" id="profile-lifecycle" role="tabpanel" aria-labelledby="profile-lifecycle-tab">
+                        <h4 class="fw-bold mb-3 text-white"><i class="bi bi-signpost-split-fill text-accent-blue me-2"></i>Career Lifecycle Actions</h4>
+                        <p class="text-muted-custom small mb-4">Perform department transfers, job promotions, termination exits, or deactivate account logins.</p>
+
+                        <div class="row g-3 mb-4">
+                            <!-- Promotion Control -->
+                            <div class="col-md-6">
+                                <div class="card bg-dark bg-opacity-20 border-muted-custom h-100">
+                                    <div class="card-body">
+                                        <h6 class="fw-bold text-white mb-3"><i class="bi bi-graph-up-arrow text-success me-2"></i>Promote Employee</h6>
+                                        <form method="POST" action="{{ url_for('edit_employee', employee_id=employee.id) }}">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <input type="hidden" name="action_type" value="promote">
+                                            <div class="mb-3">
+                                                <label class="form-label small text-muted-custom">New Designation</label>
+                                                <input type="text" name="new_designation" class="form-control form-control-custom form-control-sm" placeholder="e.g. Senior Software Engineer" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label small text-muted-custom">New Monthly Salary ($)</label>
+                                                <input type="number" step="0.01" name="new_salary" class="form-control form-control-custom form-control-sm" placeholder="e.g. 6500.00" required>
+                                            </div>
+                                            <button type="submit" class="btn btn-success bg-gradient btn-sm w-100">Submit Promotion</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Transfer Control -->
+                            <div class="col-md-6">
+                                <div class="card bg-dark bg-opacity-20 border-muted-custom h-100">
+                                    <div class="card-body">
+                                        <h6 class="fw-bold text-white mb-3"><i class="bi bi-arrows-move text-accent-blue me-2"></i>Transfer Department / Branch</h6>
+                                        <form method="POST" action="{{ url_for('edit_employee', employee_id=employee.id) }}">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <input type="hidden" name="action_type" value="transfer">
+                                            <div class="mb-2">
+                                                <label class="form-label small text-muted-custom">New Department</label>
+                                                <input type="text" name="new_department" class="form-control form-control-custom form-control-sm" placeholder="e.g. Finance" required>
+                                            </div>
+                                            <div class="mb-2">
+                                                <label class="form-label small text-muted-custom">New Branch</label>
+                                                <input type="text" name="new_branch" class="form-control form-control-custom form-control-sm" placeholder="e.g. London Tech Hub" required>
+                                            </div>
+                                            <div class="mb-2">
+                                                <label class="form-label small text-muted-custom">New Reporting Manager</label>
+                                                <input type="text" name="new_manager" class="form-control form-control-custom form-control-sm" placeholder="e.g. Jane Smith" required>
+                                            </div>
+                                            <button type="submit" class="btn btn-primary bg-gradient btn-sm w-100">Submit Transfer</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Account Deactivation & Exit -->
+                            <div class="col-md-12 mt-3">
+                                <div class="card bg-danger bg-opacity-10 border-danger border-opacity-20">
+                                    <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-3">
+                                        <div>
+                                            <h6 class="fw-bold text-white mb-1">Account Suspension & Resignation Exits</h6>
+                                            <p class="mb-0 small text-muted-custom">Suspend logins, trigger deactivation protocols, or apply exit termination logs.</p>
+                                        </div>
+                                        <div class="d-flex gap-2">
+                                            <form method="POST" action="{{ url_for('edit_employee', employee_id=employee.id) }}">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <input type="hidden" name="action_type" value="deactivate">
+                                                <button type="submit" class="btn btn-outline-warning btn-sm border-warning border-opacity-30">
+                                                    Deactivate Account
+                                                </button>
+                                            </form>
+                                            <button type="button" class="btn btn-danger bg-gradient btn-sm" data-bs-toggle="collapse" data-bs-target="#terminationReasonBox">
+                                                Terminate / Record Exit
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="collapse p-3 border-top border-danger border-opacity-10" id="terminationReasonBox">
+                                        <form method="POST" action="{{ url_for('edit_employee', employee_id=employee.id) }}">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <input type="hidden" name="action_type" value="terminate">
+                                            <div class="row g-2 align-items-end">
+                                                <div class="col-md-9">
+                                                    <label class="form-label small text-muted-custom text-danger">Reason for Termination / Voluntary Resignation</label>
+                                                    <input type="text" name="exit_reason" class="form-control form-control-custom form-control-sm" placeholder="e.g. Relocating, performance constraints..." required>
+                                                </div>
+                                                <div class="col-md-3 d-grid">
+                                                    <button type="submit" class="btn btn-danger btn-sm bg-gradient">Submit Exit Log</button>
+                                                </div>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Lifecycle history logs -->
+                        <h6 class="fw-bold text-white mb-3">Corporate Career Lifecycle History</h6>
+                        <div class="table-responsive">
+                            <table class="table table-hover table-dark-custom align-middle small">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Event Type</th>
+                                        <th>Description Details</th>
+                                        <th>Logged By</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% if lifecycle_history %}
+                                        {% for log in lifecycle_history %}
+                                        <tr>
+                                            <td>{{ log.event_date }}</td>
+                                            <td>
+                                                <span class="badge {% if log.event_type == 'Onboarding' %}bg-success bg-opacity-20 text-success{% elif log.event_type == 'Promotion' %}bg-primary bg-opacity-20 text-accent-blue{% elif log.event_type == 'Transfer' %}bg-warning bg-opacity-20 text-warning{% else %}bg-danger bg-opacity-20 text-danger{% endif %} border border-opacity-10">
+                                                    {{ log.event_type }}
+                                                </span>
+                                            </td>
+                                            <td class="text-white">{{ log.description }}</td>
+                                            <td class="text-muted-custom">{{ log.performed_by }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    {% else %}
+                                        <tr>
+                                            <td colspan="4" class="text-center py-3 text-muted-custom">No career milestones logged.</td>
+                                        </tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- TAB 6: COMPANY BADGE -->
+                    <div class="tab-pane fade text-center" id="profile-badge" role="tabpanel" aria-labelledby="profile-badge-tab">
+                        <h4 class="fw-bold mb-3 text-start text-white"><i class="bi bi-card-heading text-accent-blue me-2"></i>Corporate ID Badge Generator</h4>
+                        <p class="text-muted-custom text-start small mb-4">Preview the active employee corporate identity card. Press print to generate the physical copy.</p>
+                        
+                        <div class="d-flex justify-content-center py-4">
+                            <div class="corporate-badge text-center" id="idBadgePrintArea">
+                                <div class="badge-photo">
+                                    {{ employee.name[:2]|upper }}
+                                </div>
+                                <h5 class="fw-bold mb-1 text-white">{{ employee.name }}</h5>
+                                <div class="text-accent-blue small fw-semibold mb-2">{{ employee.designation }}</div>
+                                <div class="text-muted-custom small mb-4">{{ employee.department }}</div>
+                                
+                                <div class="small border-top border-muted-custom pt-3 text-start">
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span class="text-muted-custom">Code:</span>
+                                        <span class="fw-bold">{{ employee.employee_code or 'N/A' }}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <span class="text-muted-custom">Branch:</span>
+                                        <span class="fw-bold">{{ employee.branch or 'Main HQ' }}</span>
+                                    </div>
+                                </div>
+                                
+                                <!-- Mock Barcode -->
+                                <div class="mt-4 bg-white p-2 rounded d-flex align-items-center justify-content-center" style="height: 40px; border: 1px solid #334155;">
+                                    <div class="d-flex gap-1 align-items-stretch" style="height: 100%;">
+                                        <div class="bg-dark" style="width: 2px;"></div>
+                                        <div class="bg-dark" style="width: 1px;"></div>
+                                        <div class="bg-dark" style="width: 3px;"></div>
+                                        <div class="bg-dark" style="width: 1px;"></div>
+                                        <div class="bg-dark" style="width: 4px;"></div>
+                                        <div class="bg-dark" style="width: 2px;"></div>
+                                        <div class="bg-dark" style="width: 1px;"></div>
+                                        <div class="bg-dark" style="width: 3px;"></div>
+                                        <div class="bg-dark" style="width: 2px;"></div>
+                                        <div class="bg-dark" style="width: 1px;"></div>
+                                        <div class="bg-dark" style="width: 3px;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <button onclick="window.print()" class="btn btn-primary bg-gradient btn-sm">
+                                <i class="bi bi-printer-fill me-1"></i> Print Corporate ID Badge
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

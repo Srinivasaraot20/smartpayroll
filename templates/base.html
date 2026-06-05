@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}PayrollPro - Payroll Management System{% endblock %}</title>
+    <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    {% if session.get('user_id') %}
+        <!-- Navbar for logged in users -->
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+            <div class="container">
+                <a class="navbar-brand" href="{{ url_for('index') }}">
+                    <i class="bi bi-cash-coin me-2"></i>PayrollPro
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    {% if session.get('role') == 'hr' %}
+                        <!-- HR Navigation Menu -->
+                        <ul class="navbar-nav me-auto">
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.endpoint == 'hr_dashboard' %}active{% endif %}" 
+                                   href="{{ url_for('hr_dashboard') }}">
+                                    <i class="bi bi-speedometer2 me-1"></i> Dashboard
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.endpoint == 'employee_management' %}active{% endif %}" 
+                                   href="{{ url_for('employee_management') }}">
+                                    <i class="bi bi-people me-1"></i> Employees
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.endpoint == 'attendance_monitoring' %}active{% endif %}" 
+                                   href="{{ url_for('attendance_monitoring') }}">
+                                    <i class="bi bi-calendar-check me-1"></i> Attendance
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.endpoint == 'leave_management' %}active{% endif %}" 
+                                   href="{{ url_for('leave_management') }}">
+                                    <i class="bi bi-calendar-minus me-1"></i> Leaves
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.endpoint == 'payroll_processing' %}active{% endif %}" 
+                                   href="{{ url_for('payroll_processing') }}">
+                                    <i class="bi bi-cash-stack me-1"></i> Payroll
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.endpoint == 'payslip_management' %}active{% endif %}" 
+                                   href="{{ url_for('payslip_management') }}">
+                                    <i class="bi bi-file-earmark-text me-1"></i> Payslips
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.endpoint == 'compliance_reports' %}active{% endif %}" 
+                                   href="{{ url_for('compliance_reports') }}">
+                                    <i class="bi bi-journal-code me-1"></i> Reports
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.endpoint == 'inquiry_management' %}active{% endif %}" 
+                                   href="{{ url_for('inquiry_management') }}">
+                                    <i class="bi bi-question-circle me-1"></i> Inquiries
+                                </a>
+                            </li>
+                        </ul>
+                    {% else %}
+                        <!-- Employee Navigation Menu -->
+                        <ul class="navbar-nav me-auto">
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.endpoint == 'employee_dashboard' %}active{% endif %}" 
+                                   href="{{ url_for('employee_dashboard') }}">
+                                    <i class="bi bi-speedometer2 me-1"></i> Dashboard
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.endpoint == 'employee_profile' %}active{% endif %}" 
+                                   href="{{ url_for('employee_profile') }}">
+                                    <i class="bi bi-person me-1"></i> My Profile
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.endpoint == 'employee_attendance' %}active{% endif %}" 
+                                   href="{{ url_for('employee_attendance') }}">
+                                    <i class="bi bi-calendar-check me-1"></i> Attendance
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.endpoint == 'apply_leave' %}active{% endif %}" 
+                                   href="{{ url_for('apply_leave') }}">
+                                    <i class="bi bi-calendar-plus me-1"></i> Apply Leave
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.endpoint == 'my_leaves' %}active{% endif %}" 
+                                   href="{{ url_for('my_leaves') }}">
+                                    <i class="bi bi-calendar-minus me-1"></i> My Leaves
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.endpoint == 'payroll_history' %}active{% endif %}" 
+                                   href="{{ url_for('payroll_history') }}">
+                                    <i class="bi bi-file-earmark-text me-1"></i> Payroll
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.endpoint == 'employee_inquiry' %}active{% endif %}" 
+                                   href="{{ url_for('employee_inquiry') }}">
+                                    <i class="bi bi-question-circle me-1"></i> Inquiry
+                                </a>
+                            </li>
+                        </ul>
+                    {% endif %}
+                    
+                    <!-- User dropdown menu -->
+                    <ul class="navbar-nav ms-auto">
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
+                                data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-person-circle me-1"></i> {{ session.get('name', 'User') }}
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                                {% if session.get('role') == 'employee' %}
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('employee_profile') }}">
+                                        <i class="bi bi-person me-2"></i> Profile
+                                    </a>
+                                </li>
+                                {% endif %}
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('logout') }}">
+                                        <i class="bi bi-box-arrow-right me-2"></i> Logout
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    {% endif %}
+
+    <!-- Flash messages -->
+    <div class="container mt-4">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <!-- Main content -->
+    <main class="container my-4">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-light py-4 mt-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>PayrollPro</h5>
+                    <p class="small">A comprehensive Payroll Management System</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p class="small">Employee Management System</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript Dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,213 @@
+{% extends 'base.html' %}
+
+{% block title %}My Payroll - PayrollPro{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-file-earmark-text me-2"></i>My Payroll History</h2>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Salary Breakdown Chart -->
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Salary Breakdown</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-4">
+                    <canvas id="salaryBreakdownChart" height="250"></canvas>
+                </div>
+                
+                <div class="mt-4">
+                    <h6 class="card-subtitle mb-3">Salary Components:</h6>
+                    <div class="mb-2 d-flex justify-content-between">
+                        <span><i class="bi bi-circle-fill text-primary me-2"></i> Basic Salary</span>
+                        <span class="fw-bold">70%</span>
+                    </div>
+                    <div class="mb-2 d-flex justify-content-between">
+                        <span><i class="bi bi-circle-fill text-success me-2"></i> Allowances</span>
+                        <span class="fw-bold">10%</span>
+                    </div>
+                    <div class="mb-2 d-flex justify-content-between">
+                        <span><i class="bi bi-circle-fill text-warning me-2"></i> PF Contribution</span>
+                        <span class="fw-bold">8%</span>
+                    </div>
+                    <div class="mb-2 d-flex justify-content-between">
+                        <span><i class="bi bi-circle-fill text-info me-2"></i> ESI</span>
+                        <span class="fw-bold">4%</span>
+                    </div>
+                    <div class="mb-2 d-flex justify-content-between">
+                        <span><i class="bi bi-circle-fill text-danger me-2"></i> TDS</span>
+                        <span class="fw-bold">8%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Payslips List -->
+    <div class="col-md-8 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Payslip History</h5>
+            </div>
+            <div class="card-body">
+                {% if payslips %}
+                    <div class="row">
+                        {% for payslip in payslips|sort(attribute='generated_date', reverse=true) %}
+                            <div class="col-md-6 mb-4">
+                                <div class="payslip-card">
+                                    <div class="payslip-header">
+                                        <h5 class="mb-0">{{ payslip.month }}/{{ payslip.year }}</h5>
+                                        <small>Generated on {{ payslip.generated_date.strftime('%d %b, %Y') }}</small>
+                                    </div>
+                                    <div class="payslip-body">
+                                        <div class="payslip-row">
+                                            <span>Basic Salary:</span>
+                                            <span>${{ "%.2f"|format(payslip.basic_salary) }}</span>
+                                        </div>
+                                        <div class="payslip-row">
+                                            <span>Allowances:</span>
+                                            <span>${{ "%.2f"|format(payslip.allowances) }}</span>
+                                        </div>
+                                        <div class="payslip-row">
+                                            <span>Deductions:</span>
+                                            <span>${{ "%.2f"|format(payslip.deductions) }}</span>
+                                        </div>
+                                        <div class="payslip-total">
+                                            <span>Net Salary:</span>
+                                            <span>${{ "%.2f"|format(payslip.net_salary) }}</span>
+                                        </div>
+                                        <div class="text-center mt-3">
+                                            <a href="{{ url_for('download_payslip', payslip_id=payslip.id) }}" class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-download me-1"></i> Download
+                                            </a>
+                                            <button type="button" class="btn btn-sm btn-outline-info" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#payslipModal{{ payslip.id }}">
+                                                <i class="bi bi-eye me-1"></i> View Details
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Payslip Modal -->
+                            <div class="modal fade" id="payslipModal{{ payslip.id }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-lg">
+                                    <div class="modal-content">
+                                        <div class="modal-header bg-primary text-white">
+                                            <h5 class="modal-title">
+                                                Payslip Details - {{ payslip.month }}/{{ payslip.year }}
+                                            </h5>
+                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="row mb-4">
+                                                <div class="col-md-6">
+                                                    <h6>Employee Details</h6>
+                                                    <p class="mb-1">Name: {{ session.get('name') }}</p>
+                                                    <p class="mb-1">Employee ID: {{ session.get('user_id') }}</p>
+                                                    <p class="mb-1">Email: {{ session.get('email') }}</p>
+                                                </div>
+                                                <div class="col-md-6 text-md-end">
+                                                    <h6>Payslip Information</h6>
+                                                    <p class="mb-1">Period: {{ payslip.month }}/{{ payslip.year }}</p>
+                                                    <p class="mb-1">Generated On: {{ payslip.generated_date.strftime('%d %b, %Y') }}</p>
+                                                    <p class="mb-1">Payslip ID: #{{ payslip.id }}</p>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="card mb-3">
+                                                        <div class="card-header bg-success bg-opacity-10">
+                                                            <h6 class="card-title mb-0 text-success">Earnings</h6>
+                                                        </div>
+                                                        <div class="card-body">
+                                                            <div class="d-flex justify-content-between mb-2">
+                                                                <span>Basic Salary:</span>
+                                                                <span>${{ "%.2f"|format(payslip.basic_salary) }}</span>
+                                                            </div>
+                                                            <div class="d-flex justify-content-between mb-2">
+                                                                <span>Allowances:</span>
+                                                                <span>${{ "%.2f"|format(payslip.allowances) }}</span>
+                                                            </div>
+                                                            <div class="d-flex justify-content-between fw-bold mt-3 pt-3 border-top">
+                                                                <span>Total Earnings:</span>
+                                                                <span>${{ "%.2f"|format(payslip.basic_salary + payslip.allowances) }}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="col-md-6">
+                                                    <div class="card mb-3">
+                                                        <div class="card-header bg-danger bg-opacity-10">
+                                                            <h6 class="card-title mb-0 text-danger">Deductions</h6>
+                                                        </div>
+                                                        <div class="card-body">
+                                                            <div class="d-flex justify-content-between mb-2">
+                                                                <span>PF Contribution:</span>
+                                                                <span>${{ "%.2f"|format(payslip.pf_contribution) }}</span>
+                                                            </div>
+                                                            <div class="d-flex justify-content-between mb-2">
+                                                                <span>ESI Contribution:</span>
+                                                                <span>${{ "%.2f"|format(payslip.esi_contribution) }}</span>
+                                                            </div>
+                                                            <div class="d-flex justify-content-between mb-2">
+                                                                <span>Tax Deducted at Source (TDS):</span>
+                                                                <span>${{ "%.2f"|format(payslip.tds) }}</span>
+                                                            </div>
+                                                            <div class="d-flex justify-content-between fw-bold mt-3 pt-3 border-top">
+                                                                <span>Total Deductions:</span>
+                                                                <span>${{ "%.2f"|format(payslip.deductions) }}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="col-12">
+                                                    <div class="card bg-primary bg-opacity-10 mb-0">
+                                                        <div class="card-body">
+                                                            <div class="d-flex justify-content-between align-items-center">
+                                                                <h5 class="text-primary mb-0">Net Salary:</h5>
+                                                                <h4 class="text-primary mb-0">${{ "%.2f"|format(payslip.net_salary) }}</h4>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                            <a href="#" class="btn btn-primary download-payslip" data-id="{{ payslip.id }}">
+                                                <i class="bi bi-download me-1"></i> Download Payslip
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-file-earmark-x text-muted" style="font-size: 3rem;"></i>
+                        <h5 class="mt-3">No Payslips Available</h5>
+                        <p class="text-muted">Your payslips will appear here once processed.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/payroll.js') }}"></script>
+{% endblock %}

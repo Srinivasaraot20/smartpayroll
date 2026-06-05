@@ -1,0 +1,185 @@
+{% extends 'base.html' %}
+
+{% block title %}Employee Dashboard - PayrollPro{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-speedometer2 me-2"></i>Employee Dashboard</h2>
+            <div>
+                <span class="badge text-bg-primary">Employee ID: {{ employee.id }}</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Welcome Card -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row align-items-center">
+            <div class="col-md-9">
+                <h4>Welcome, {{ session.get('name', 'Employee') }}</h4>
+                <p class="text-muted mb-0">{{ employee.designation }} | {{ employee.department }}</p>
+            </div>
+            <div class="col-md-3 text-end">
+                <a href="{{ url_for('employee_profile') }}" class="btn btn-outline-primary">
+                    <i class="bi bi-person me-1"></i> View Profile
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stats Row -->
+<div class="row mb-4">
+    <!-- Attendance Stats -->
+    <div class="col-md-4 mb-3">
+        <div class="card stat-card bg-primary bg-opacity-10 h-100">
+            <div class="card-body text-center">
+                <div class="stat-icon text-primary">
+                    <i class="bi bi-calendar-check"></i>
+                </div>
+                <div class="stat-value text-primary">{{ attendance_percentage }}%</div>
+                <div class="stat-label">Attendance This Month</div>
+                <div class="mt-3">
+                    <a href="{{ url_for('employee_attendance') }}" class="btn btn-sm btn-primary">
+                        Mark Attendance
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Leave Balance -->
+    <div class="col-md-4 mb-3">
+        <div class="card stat-card bg-success bg-opacity-10 h-100">
+            <div class="card-body text-center">
+                <div class="stat-icon text-success">
+                    <i class="bi bi-calendar-minus"></i>
+                </div>
+                <div class="stat-value text-success">{{ pending_leaves|length }}</div>
+                <div class="stat-label">Pending Leave Requests</div>
+                <div class="mt-3">
+                    <a href="{{ url_for('apply_leave') }}" class="btn btn-sm btn-success">
+                        Apply Leave
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Payslip -->
+    <div class="col-md-4 mb-3">
+        <div class="card stat-card bg-info bg-opacity-10 h-100">
+            <div class="card-body text-center">
+                <div class="stat-icon text-info">
+                    <i class="bi bi-cash-stack"></i>
+                </div>
+                <div class="stat-value text-info">
+                    {% if recent_payslip %}
+                        ${{ "%.2f"|format(recent_payslip.net_salary) }}
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </div>
+                <div class="stat-label">Last Payslip Amount</div>
+                <div class="mt-3">
+                    <a href="{{ url_for('payroll_history') }}" class="btn btn-sm btn-info">
+                        View Payslips
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Attendance Chart -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Attendance History</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="attendanceChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Leave Chart -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Leave Distribution</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="leaveChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Access Cards -->
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <h4 class="mb-3">Quick Actions</h4>
+    </div>
+    
+    <!-- Attendance Card -->
+    <div class="col-md-3 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-calendar-check text-primary" style="font-size: 2rem;"></i>
+                <h5 class="mt-3">Attendance</h5>
+                <p class="text-muted">Mark your daily attendance or view history</p>
+                <a href="{{ url_for('employee_attendance') }}" class="btn btn-outline-primary btn-sm">
+                    Manage Attendance
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Leave Card -->
+    <div class="col-md-3 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-calendar-minus text-success" style="font-size: 2rem;"></i>
+                <h5 class="mt-3">Leave</h5>
+                <p class="text-muted">Submit new leave requests or check status</p>
+                <a href="{{ url_for('apply_leave') }}" class="btn btn-outline-success btn-sm">Apply Leave</a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Payroll Card -->
+    <div class="col-md-3 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-cash-stack text-info" style="font-size: 2rem;"></i>
+                <h5 class="mt-3">Payroll</h5>
+                <p class="text-muted">View salary details and download payslips</p>
+                <a href="{{ url_for('payroll_history') }}" class="btn btn-outline-info btn-sm">View Payslips</a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Inquiry Card -->
+    <div class="col-md-3 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-question-circle text-warning" style="font-size: 2rem;"></i>
+                <h5 class="mt-3">Inquiries</h5>
+                <p class="text-muted">Submit questions or concerns to HR</p>
+                <a href="{{ url_for('employee_inquiry') }}" class="btn btn-outline-warning btn-sm">
+                    Submit Inquiry
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

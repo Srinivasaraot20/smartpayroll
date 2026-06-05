@@ -1,0 +1,659 @@
+{% extends 'base.html' %}
+
+{% block title %}Employee Directory - PayrollPro{% endblock %}
+
+{% block content %}
+<style>
+    .hrms-bg {
+        background-color: #0F172A;
+        color: #F8FAFC;
+    }
+    .hrms-card {
+        background-color: #1E293B;
+        border: 1px solid #334155;
+        border-radius: 0.75rem;
+        transition: all 0.3s ease;
+    }
+    .hrms-card:hover {
+        border-color: #475569;
+        box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
+    }
+    .text-muted-custom {
+        color: #94A3B8;
+    }
+    .text-accent-blue {
+        color: #38BDF8;
+    }
+    .border-muted-custom {
+        border-color: #334155;
+    }
+    .table-dark-custom {
+        color: #F8FAFC;
+        border-color: #334155;
+    }
+    .table-dark-custom th {
+        background-color: #0F172A;
+        color: #38BDF8;
+        font-weight: 600;
+        border-bottom: 2px solid #334155;
+    }
+    .table-dark-custom td {
+        background-color: #1E293B;
+        border-bottom: 1px solid #334155;
+    }
+    .form-control-custom {
+        background-color: #0F172A;
+        border: 1px solid #334155;
+        color: #F8FAFC;
+    }
+    .form-control-custom:focus {
+        background-color: #0F172A;
+        border-color: #38BDF8;
+        color: #F8FAFC;
+        box-shadow: 0 0 0 0.25rem rgba(56, 189, 248, 0.25);
+    }
+    .avatar-initials {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background-color: #38BDF8;
+        color: #0F172A;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-transform: uppercase;
+    }
+    .badge-active {
+        background-color: rgba(16, 185, 129, 0.15);
+        color: #34D399;
+        border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .badge-inactive {
+        background-color: rgba(239, 68, 68, 0.15);
+        color: #FCA5A5;
+        border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    .badge-on-leave {
+        background-color: rgba(245, 158, 11, 0.15);
+        color: #FBBF24;
+        border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+</style>
+
+<div class="container-fluid py-2 hrms-bg">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-0 text-white"><i class="bi bi-people-fill text-accent-blue me-2"></i>Employee Directory</h2>
+            <p class="text-muted-custom mb-0">Manage complete enterprise employee lifecycles, files, payroll structures, and compliance logs.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('download_employees_csv') }}" class="btn btn-outline-light border-muted-custom btn-sm">
+                <i class="bi bi-download me-1"></i> Export Directory CSV
+            </a>
+            <button type="button" class="btn btn-primary bg-gradient btn-sm" data-bs-toggle="modal" data-bs-target="#addEmployeeModal">
+                <i class="bi bi-person-plus-fill me-1"></i> Add Employee
+            </button>
+        </div>
+    </div>
+
+    <!-- Quick Stats Cards Grid -->
+    <div class="row g-3 mb-4">
+        <!-- Card 1: Total Employees -->
+        <div class="col-md-3 col-sm-6">
+            <div class="card hrms-card p-2">
+                <div class="card-body">
+                    <span class="text-muted-custom small fw-semibold">Total Employees</span>
+                    <h3 class="fw-bold my-2 text-white">{{ stats.total }}</h3>
+                    <span class="small text-accent-blue"><i class="bi bi-person-check me-1"></i>Active: <strong>{{ stats.active }}</strong></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 2: Employees on Leave -->
+        <div class="col-md-3 col-sm-6">
+            <div class="card hrms-card p-2">
+                <div class="card-body">
+                    <span class="text-muted-custom small fw-semibold">Employees on Leave Today</span>
+                    <h3 class="fw-bold my-2 text-warning">{{ stats.on_leave }}</h3>
+                    <span class="small text-muted-custom">Out of office today</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 3: Probation / Interns -->
+        <div class="col-md-3 col-sm-6">
+            <div class="card hrms-card p-2">
+                <div class="card-body">
+                    <span class="text-muted-custom small fw-semibold">Probation / Contracts</span>
+                    <h3 class="fw-bold my-2 text-white">{{ stats.probation }} / {{ stats.contract }}</h3>
+                    <span class="small text-muted-custom">Temporary staff status</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 4: New Hires / Attrition -->
+        <div class="col-md-3 col-sm-6">
+            <div class="card hrms-card p-2">
+                <div class="card-body">
+                    <span class="text-muted-custom small fw-semibold">New Hires This Month</span>
+                    <h3 class="fw-bold my-2 text-success">{{ stats.new_hires }}</h3>
+                    <span class="small text-muted-custom">Resigned / Exited: <strong>{{ stats.resigned }}</strong></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters Pane -->
+    <div class="card hrms-card mb-4">
+        <div class="card-header border-muted-custom bg-transparent py-3" data-bs-toggle="collapse" data-bs-target="#advancedFilters" style="cursor: pointer;">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0 text-white"><i class="bi bi-funnel-fill text-accent-blue me-2"></i>Advanced Search & Filters</h5>
+                <i class="bi bi-chevron-down text-muted-custom"></i>
+            </div>
+        </div>
+        <div id="advancedFilters" class="collapse show">
+            <div class="card-body py-3">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label for="searchQuery" class="form-label small text-muted-custom">Search by Name, Code, or Email</label>
+                        <input type="text" id="searchQuery" class="form-control form-control-custom" placeholder="e.g. John Doe, EMP-2026-01...">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="filterDept" class="form-label small text-muted-custom">Department</label>
+                        <select id="filterDept" class="form-select form-control-custom">
+                            <option value="">All Departments</option>
+                            <option value="HR">HR</option>
+                            <option value="IT">IT</option>
+                            <option value="Finance">Finance</option>
+                            <option value="Marketing">Marketing</option>
+                            <option value="Operations">Operations</option>
+                            <option value="Sales">Sales</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="filterBranch" class="form-label small text-muted-custom">Office Branch</label>
+                        <select id="filterBranch" class="form-select form-control-custom">
+                            <option value="">All Branches</option>
+                            <option value="New York HQ">New York HQ</option>
+                            <option value="London Tech Hub">London Tech Hub</option>
+                            <option value="Singapore Regional Office">Singapore Regional Office</option>
+                            <option value="Mumbai Development Center">Mumbai Development Center</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="filterType" class="form-label small text-muted-custom">Employment Type</label>
+                        <select id="filterType" class="form-select form-control-custom">
+                            <option value="">All Types</option>
+                            <option value="Full-Time">Full-Time</option>
+                            <option value="Contract">Contract</option>
+                            <option value="Internship">Internship</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="filterStatus" class="form-label small text-muted-custom">Status</label>
+                        <select id="filterStatus" class="form-select form-control-custom">
+                            <option value="">All Statuses</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                            <option value="resigned">Resigned / Exited</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="filterManager" class="form-label small text-muted-custom">Reporting Manager</label>
+                        <input type="text" id="filterManager" class="form-control form-control-custom" placeholder="e.g. Jane Smith...">
+                    </div>
+                </div>
+                <div class="text-end mt-3">
+                    <button type="button" id="resetFiltersBtn" class="btn btn-outline-secondary btn-sm text-white border-muted-custom me-2">
+                        Reset Filters
+                    </button>
+                    <button type="button" id="applyFiltersBtn" class="btn btn-primary bg-gradient btn-sm">
+                        Apply Filters
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Employee Listing Directory -->
+    <div class="card hrms-card mb-4">
+        <div class="card-header border-muted-custom bg-transparent py-3">
+            <h5 class="card-title mb-0 text-white">Employee Roster</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover table-dark-custom align-middle" id="employeesTable">
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Profile</th>
+                            <th>Full Name</th>
+                            <th>Dept & Desg</th>
+                            <th>Branch</th>
+                            <th>Type</th>
+                            <th>Reporting Manager</th>
+                            <th class="text-end">Salary</th>
+                            <th class="text-center">Status</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if employees %}
+                            {% for employee in employees %}
+                                <tr data-name="{{ employee.name }}" 
+                                    data-code="{{ employee.employee_code }}" 
+                                    data-email="{{ employee.email }}"
+                                    data-dept="{{ employee.department }}"
+                                    data-branch="{{ employee.branch }}"
+                                    data-type="{{ employee.employee_type }}"
+                                    data-status="{{ employee.status }}"
+                                    data-manager="{{ employee.reporting_manager }}">
+                                    <td class="font-monospace small text-accent-blue">{{ employee.employee_code or 'N/A' }}</td>
+                                    <td>
+                                        <div class="avatar-initials">
+                                            {{ employee.name[:2] }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="fw-semibold text-white">{{ employee.name }}</div>
+                                        <div class="small text-muted-custom">{{ employee.email }}</div>
+                                    </td>
+                                    <td>
+                                        <div class="text-white">{{ employee.designation }}</div>
+                                        <div class="small text-accent-blue">{{ employee.department }}</div>
+                                    </td>
+                                    <td>{{ employee.branch or 'Main HQ' }}</td>
+                                    <td><span class="badge bg-secondary bg-opacity-25 text-muted-custom border border-muted-custom">{{ employee.employee_type or 'Full-Time' }}</span></td>
+                                    <td class="small text-muted-custom">{{ employee.reporting_manager or 'Admin User' }}</td>
+                                    <td class="text-end fw-semibold text-white">${{ "%.2f"|format(employee.basic_salary) }}</td>
+                                    <td class="text-center">
+                                        {% if employee.status == 'active' %}
+                                            <span class="badge badge-filed"><i class="bi bi-circle-fill me-1 small"></i>Active</span>
+                                        {% elif employee.status == 'inactive' %}
+                                            <span class="badge badge-pending"><i class="bi bi-circle-fill me-1 small"></i>Inactive</span>
+                                        {% else %}
+                                            <span class="badge badge-overdue"><i class="bi bi-x-circle-fill me-1 small"></i>{{ employee.status|capitalize }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        <a href="{{ url_for('edit_employee', employee_id=employee.id) }}" class="btn btn-sm btn-outline-primary bg-opacity-10">
+                                            <i class="bi bi-eye-fill me-1"></i> View / Edit
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="10" class="text-center py-5 text-muted-custom">No employees found. Please register employee profiles first.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <div id="noRosterRecords" class="text-center py-5 d-none">
+                <i class="bi bi-search text-muted-custom" style="font-size: 2.5rem;"></i>
+                <h5 class="mt-2 text-white">No Matching Employees Found</h5>
+                <p class="text-muted-custom small">Adjust search parameters or clear filters.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Visual Analytics -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-6">
+            <div class="card hrms-card">
+                <div class="card-header border-muted-custom bg-transparent py-3">
+                    <h6 class="fw-bold text-white mb-0">Department Distribution</h6>
+                </div>
+                <div class="card-body" style="height: 280px;">
+                    <canvas id="hrmsDeptChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card hrms-card">
+                <div class="card-header border-muted-custom bg-transparent py-3">
+                    <h6 class="fw-bold text-white mb-0">Salary Distribution Range</h6>
+                </div>
+                <div class="card-body" style="height: 280px;">
+                    <canvas id="hrmsSalaryChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Employee Modal -->
+<div class="modal fade" id="addEmployeeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content hrms-card border-muted-custom">
+            <div class="modal-header border-muted-custom bg-transparent">
+                <h5 class="modal-title text-white">
+                    <i class="bi bi-person-plus-fill text-accent-blue me-2"></i>Add New Employee Profile
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" style="max-height: 80vh; overflow-y: auto;">
+                <form method="POST" action="{{ url_for('employee_management') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    <!-- Section 1: Personal Info -->
+                    <h6 class="fw-bold text-accent-blue mb-3 border-bottom border-muted-custom pb-2">Personal Information</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted-custom">Full Name *</label>
+                            <input type="text" name="name" class="form-control form-control-custom" placeholder="e.g. John Doe" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted-custom">Gender</label>
+                            <select name="gender" class="form-select form-control-custom">
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted-custom">Date of Birth</label>
+                            <input type="date" name="date_of_birth" class="form-control form-control-custom">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted-custom">Mobile Number</label>
+                            <input type="text" name="phone" class="form-control form-control-custom" placeholder="e.g. +1 555-0199">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted-custom">Personal Email</label>
+                            <input type="email" name="personal_email" class="form-control form-control-custom" placeholder="e.g. john.personal@gmail.com">
+                        </div>
+                    </div>
+
+                    <!-- Section 2: Employment Info -->
+                    <h6 class="fw-bold text-accent-blue mb-3 border-bottom border-muted-custom pb-2">Employment Information</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted-custom">Corporate Email *</label>
+                            <input type="email" name="corporate_email" class="form-control form-control-custom" placeholder="e.g. john.doe@payrollpro.com" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted-custom">Department *</label>
+                            <input type="text" name="department" class="form-control form-control-custom" placeholder="e.g. IT, HR, Sales" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted-custom">Designation *</label>
+                            <input type="text" name="designation" class="form-control form-control-custom" placeholder="e.g. Engineer" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted-custom">Reporting Manager</label>
+                            <input type="text" name="reporting_manager" class="form-control form-control-custom" placeholder="e.g. Jane Smith">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted-custom">Branch Office</label>
+                            <select name="branch" class="form-select form-control-custom">
+                                <option value="New York HQ">New York HQ</option>
+                                <option value="London Tech Hub">London Tech Hub</option>
+                                <option value="Singapore Regional Office">Singapore Regional Office</option>
+                                <option value="Mumbai Development Center">Mumbai Development Center</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted-custom">Employment Type</label>
+                            <select name="employee_type" class="form-select form-control-custom">
+                                <option value="Full-Time">Full-Time</option>
+                                <option value="Contract">Contract</option>
+                                <option value="Internship">Internship</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted-custom">Date of Joining</label>
+                            <input type="date" name="date_joined" class="form-control form-control-custom" value="2026-06-05">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted-custom">Probation Period Status</label>
+                            <select name="probation_status" class="form-select form-control-custom">
+                                <option value="Probation">Probation</option>
+                                <option value="Confirmed">Confirmed</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Section 3: Payroll Info -->
+                    <h6 class="fw-bold text-accent-blue mb-3 border-bottom border-muted-custom pb-2">Payroll & Accounts Information</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted-custom">Basic Monthly Salary ($) *</label>
+                            <input type="number" step="0.01" name="salary" class="form-control form-control-custom" placeholder="e.g. 5000.00" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted-custom">Bank Account Number</label>
+                            <input type="text" name="bank_account" class="form-control form-control-custom">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted-custom">IFSC / Routing Code</label>
+                            <input type="text" name="ifsc_code" class="form-control form-control-custom">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted-custom">PAN Number</label>
+                            <input type="text" name="pan_number" class="form-control form-control-custom">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted-custom">Aadhaar Number</label>
+                            <input type="text" name="aadhaar_number" class="form-control form-control-custom">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted-custom">UAN Number</label>
+                            <input type="text" name="uan_number" class="form-control form-control-custom">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted-custom">ESI Number</label>
+                            <input type="text" name="esi_number" class="form-control form-control-custom">
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info bg-primary bg-opacity-10 border-0 text-white small">
+                        <i class="bi bi-info-circle-fill text-accent-blue me-2"></i>
+                        <strong>Default Login Password:</strong> Emp@123<br>
+                        The employee will be required to change the password during first login.
+                    </div>
+                    
+                    <div class="text-end mt-4">
+                        <button type="button" class="btn btn-secondary border-muted-custom btn-sm text-white" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary bg-gradient btn-sm">
+                            Create Profile
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if new_emp %}
+<!-- Success Modal -->
+<div class="modal fade" id="successEmployeeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content hrms-card border-success border-2">
+            <div class="modal-header border-success bg-transparent">
+                <h5 class="modal-title text-success fw-bold">
+                    <i class="bi bi-check-circle-fill me-2"></i>Employee Profile Created Successfully
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-white">
+                <p class="mb-3">The user login accounts, dashboard access, payroll parameters, and attendance shift values have been initialized.</p>
+                
+                <div class="bg-dark bg-opacity-35 p-3 rounded border border-muted-custom mb-3 font-monospace small">
+                    <div class="mb-2"><strong>Employee Code:</strong> {{ new_emp.code }}</div>
+                    <div class="mb-2"><strong>Username:</strong> {{ new_emp.username }}</div>
+                    <div class="mb-0"><strong>Temporary Password:</strong> {{ new_emp.password }}</div>
+                </div>
+                
+                <div class="alert alert-warning bg-warning bg-opacity-10 border-0 text-warning small mb-0">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    The employee is forced to change their password during their first login.
+                </div>
+            </div>
+            <div class="modal-footer border-muted-custom">
+                <button type="button" class="btn btn-primary bg-gradient btn-sm animate-pulse" data-bs-dismiss="modal">Done</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Show success modal on page load if set
+    {% if new_emp %}
+    const successModal = new bootstrap.Modal(document.getElementById('successEmployeeModal'));
+    successModal.show();
+    {% endif %}
+
+    // 1. Directory Search and Advanced Filters logic
+    const searchInput = document.getElementById('searchQuery');
+    const filterDept = document.getElementById('filterDept');
+    const filterBranch = document.getElementById('filterBranch');
+    const filterType = document.getElementById('filterType');
+    const filterStatus = document.getElementById('filterStatus');
+    const filterManager = document.getElementById('filterManager');
+    
+    const applyBtn = document.getElementById('applyFiltersBtn');
+    const resetBtn = document.getElementById('resetFiltersBtn');
+    
+    const rosterRows = document.querySelectorAll('#employeesTable tbody tr');
+    const tableEl = document.getElementById('employeesTable');
+    const emptyMsg = document.getElementById('noRosterRecords');
+    
+    function performFilter() {
+        const query = searchInput.value.toLowerCase().trim();
+        const dept = filterDept.value.toLowerCase();
+        const branch = filterBranch.value.toLowerCase();
+        const type = filterType.value.toLowerCase();
+        const status = filterStatus.value.toLowerCase();
+        const manager = filterManager.value.toLowerCase().trim();
+        
+        let matchCount = 0;
+        
+        rosterRows.forEach(row => {
+            const name = row.dataset.name ? row.dataset.name.toLowerCase() : '';
+            const code = row.dataset.code ? row.dataset.code.toLowerCase() : '';
+            const email = row.dataset.email ? row.dataset.email.toLowerCase() : '';
+            const rdept = row.dataset.dept ? row.dataset.dept.toLowerCase() : '';
+            const rbranch = row.dataset.branch ? row.dataset.branch.toLowerCase() : '';
+            const rtype = row.dataset.type ? row.dataset.type.toLowerCase() : '';
+            const rstatus = row.dataset.status ? row.dataset.status.toLowerCase() : '';
+            const rmanager = row.dataset.manager ? row.dataset.manager.toLowerCase() : '';
+            
+            const matchQuery = !query || name.includes(query) || code.includes(query) || email.includes(query);
+            const matchDept = !dept || rdept === dept;
+            const matchBranch = !branch || rbranch === branch;
+            const matchType = !type || rtype === type;
+            const matchStatus = !status || rstatus === status;
+            const matchManager = !manager || rmanager.includes(manager);
+            
+            if (matchQuery && matchDept && matchBranch && matchType && matchStatus && matchManager) {
+                row.classList.remove('d-none');
+                matchCount++;
+            } else {
+                row.classList.add('d-none');
+            }
+        });
+        
+        if (matchCount === 0) {
+            tableEl.classList.add('d-none');
+            emptyMsg.classList.remove('d-none');
+        } else {
+            tableEl.classList.remove('d-none');
+            emptyMsg.classList.add('d-none');
+        }
+    }
+    
+    if (applyBtn) applyBtn.addEventListener('click', performFilter);
+    if (resetBtn) {
+        resetBtn.addEventListener('click', function() {
+            searchInput.value = '';
+            filterDept.value = '';
+            filterBranch.value = '';
+            filterType.value = '';
+            filterStatus.value = '';
+            filterManager.value = '';
+            performFilter();
+        });
+    }
+    
+    // 2. Visual Analytics Charts
+    const deptCtx = document.getElementById('hrmsDeptChart');
+    if (deptCtx) {
+        const deptCounts = {};
+        rosterRows.forEach(row => {
+            const d = row.dataset.dept || 'Other';
+            deptCounts[d] = (deptCounts[d] || 0) + 1;
+        });
+        
+        new Chart(deptCtx.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(deptCounts),
+                datasets: [{
+                    data: Object.values(deptCounts),
+                    backgroundColor: ['#38BDF8', '#10B981', '#F59E0B', '#A855F7', '#EC4899', '#6366F1'],
+                    borderWidth: 1,
+                    borderColor: '#1E293B'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: { color: '#94A3B8', boxWidth: 12 }
+                    }
+                }
+            }
+        });
+    }
+
+    const salCtx = document.getElementById('hrmsSalaryChart');
+    if (salCtx) {
+        let low = 0, mid = 0, high = 0, elite = 0;
+        rosterRows.forEach(row => {
+            const salText = row.querySelector('td:nth-child(8)').textContent.replace('$', '').replace(',', '');
+            const val = parseFloat(salText) || 0.0;
+            if (val < 4000) low++;
+            else if (val < 6000) mid++;
+            else if (val < 8000) high++;
+            else elite++;
+        });
+        
+        new Chart(salCtx.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: ['< $4000', '$4000-$6000', '$6000-$8000', '> $8000'],
+                datasets: [{
+                    label: 'Employees Count',
+                    data: [low, mid, high, elite],
+                    backgroundColor: '#38BDF8',
+                    borderWidth: 1,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: { grid: { color: '#334155' }, ticks: { color: '#94A3B8' } },
+                    y: { grid: { color: '#334155' }, ticks: { color: '#94A3B8', precision: 0 } }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

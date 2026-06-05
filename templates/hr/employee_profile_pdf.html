@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Profile Dossier - {{ employee.name }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.5;
+            color: #333;
+            margin: 0;
+            padding: 30px;
+            background-color: #fff;
+        }
+        .container {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px solid #0056b3;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+        }
+        .org-details h1 {
+            margin: 0 0 5px;
+            font-size: 24px;
+            color: #0056b3;
+            text-transform: uppercase;
+        }
+        .org-details p {
+            margin: 0;
+            font-size: 12px;
+            color: #666;
+        }
+        .emp-badge {
+            text-align: right;
+        }
+        .emp-badge h2 {
+            margin: 0;
+            font-size: 20px;
+            color: #333;
+        }
+        .emp-badge p {
+            margin: 5px 0 0;
+            font-size: 14px;
+            color: #0056b3;
+            font-weight: bold;
+        }
+        .section-title {
+            background-color: #f2f2f2;
+            padding: 6px 10px;
+            font-size: 14px;
+            font-weight: bold;
+            color: #333;
+            border-left: 5px solid #0056b3;
+            margin: 20px 0 10px;
+            text-transform: uppercase;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 15px;
+            font-size: 12px;
+        }
+        .grid-item {
+            display: flex;
+            flex-direction: column;
+            border-bottom: 1px dashed #ddd;
+            padding-bottom: 5px;
+        }
+        .label {
+            color: #666;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+        .value {
+            color: #111;
+            font-weight: normal;
+        }
+        .footer {
+            margin-top: 50px;
+            border-top: 1px solid #ccc;
+            padding-top: 15px;
+            text-align: center;
+            font-size: 10px;
+            color: #888;
+        }
+        @media print {
+            body {
+                padding: 0;
+            }
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Print Header control -->
+        <div class="no-print" style="background-color: #f8f9fa; padding: 15px; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 13px; color: #555;">Dossier preview sheet. Press button to print profile or save to PDF.</span>
+            <button onclick="window.print()" style="background-color: #0056b3; color: white; border: none; padding: 6px 14px; border-radius: 4px; font-weight: bold; cursor: pointer;">
+                Print dossier
+            </button>
+        </div>
+
+        <div class="header">
+            <div class="org-details">
+                <h1>PayrollPro ERP</h1>
+                <p>Enterprise Resource & Workforce Management System</p>
+            </div>
+            <div class="emp-badge">
+                <h2>{{ employee.name }}</h2>
+                <p>{{ employee.employee_code or 'N/A' }}</p>
+            </div>
+        </div>
+
+        <!-- 1. Personal Info -->
+        <div class="section-title">Personal Information</div>
+        <div class="grid">
+            <div class="grid-item">
+                <span class="label">Full Name</span>
+                <span class="value">{{ employee.name }}</span>
+            </div>
+            <div class="grid-item">
+                <span class="label">Gender</span>
+                <span class="value">{{ employee.gender or 'Male' }}</span>
+            </div>
+            <div class="grid-item">
+                <span class="label">Date of Birth</span>
+                <span class="value">{{ employee.date_of_birth or 'N/A' }}</span>
+            </div>
+            <div class="grid-item">
+                <span class="label">Marital Status</span>
+                <span class="value">{{ employee.marital_status or 'Single' }}</span>
+            </div>
+            <div class="grid-item">
+                <span class="label">Blood Group</span>
+                <span class="value">{{ employee.blood_group or 'O+' }}</span>
+            </div>
+            <div class="grid-item">
+                <span class="label">Nationality</span>
+                <span class="value">{{ employee.nationality or 'Indian' }}</span>
+            </div>
+        </div>
+
+        <!-- 2. Contact Details -->
+        <div class="section-title">Contact & Addresses</div>
+        <div class="grid">
+            <div class="grid-item">
+                <span class="label">Corporate Email</span>
+                <span class="value">{{ employee.email }}</span>
+            </div>
+            <div class="grid-item">
+                <span class="label">Mobile Number</span>
+                <span class="value">{{ employee.phone or 'N/A' }}</span>
+            </div>
+            <div class="grid-item">
+                <span class="label">Alternate Contact</span>
+                <span class="value">{{ employee.alternate_phone or 'N/A' }}</span>
+            </div>
+            <div class="grid-item">
+                <span class="label">Emergency Contact Details</span>
+                <span class="value">{{ employee.emergency_contact or 'N/A' }}</span>
+            </div>
+            <div class="grid-item" style="grid-column: span 2;">
+                <span class="label">Permanent Address</span>
+                <span class="value">{{ employee.address or 'N/A' }}</span>
+            </div>
+        </div>
+
+        <!-- 3. Employment Details -->
+        <div class="section-title">Employment Parameters</div>
+        <div class="grid">
+            <div class="grid-item">
+                <span class="label">Employee Code</span>
+                <span class="value">{{ employee.employee_code or 'N/A' }}</span>
+            </div>
+            <div class="grid-item">
+                <span class="label">Department</span>
+                <span class="value">{{ employee.department }}</span>
+            </div>
+            <div class="grid-item">
+                <span class="label">Designation</span>
+                <span class="value">{{ employee.designation }}</span>
+            </div>
+            <div class="grid-item">
+                <span class="label">Branch Office</span>
+                <span class="value">{{ employee.branch or 'Main Headquarters' }}</span>
+            </div>
+            <div class="grid-item">
+                <span class="label">Reporting Manager</span>
+                <span class="value">{{ employee.reporting_manager or 'Admin User' }}</span>
+            </div>
+            <div class="grid-item">
+                <span class="label">Joining Date</span>
+                <span class="value">{{ employee.date_joined }}</span>
+            </div>
+            <div class="grid-item">
+                <span class="label">Employment Type</span>
+                <span class="value">{{ employee.employee_type or 'Full-Time' }}</span>
+            </div>
+            <div class="grid-item">
+                <span class="label">Probation Status</span>
+                <span class="value">{{ employee.probation_status or 'Confirmed' }}</span>
+            </div>
+        </div>
+
+        <!-- 4. Payroll Details -->
+        <div class="section-title">Payroll & Accounts</div>
+        <div class="grid">
+            <div class="grid-item">
+                <span class="label">Basic Monthly Salary</span>
+                <span class="value">${{ "%.2f"|format(employee.basic_salary) }}</span>
+            </div>
+            <div class="grid-item">
+                <span class="label">Bank Account Number</span>
+                <span class="value">{{ employee.bank_account or 'N/A' }}</span>
+            </div>
+            <div class="grid-item">
+                <span class="label">IFSC / Routing Code</span>
+                <span class="value">{{ employee.ifsc_code or 'N/A' }}</span>
+            </div>
+            <div class="grid-item">
+                <span class="label">PAN Card Tax Number</span>
+                <span class="value">{{ employee.pan_number or 'N/A' }}</span>
+            </div>
+            <div class="grid-item">
+                <span class="label">Universal Account Number (UAN)</span>
+                <span class="value">{{ employee.uan_number or 'N/A' }}</span>
+            </div>
+            <div class="grid-item">
+                <span class="label">ESI Account Number</span>
+                <span class="value">{{ employee.esi_number or 'N/A' }}</span>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Confidential Document - For Internal HR Use Only. Generated on {{ now.strftime('%d %b %Y %H:%M:%S') }} by HR Administration.</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,290 @@
+{% extends 'base.html' %}
+
+{% block title %}Payroll Processing - PayrollPro{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-cash-stack me-2"></i>Payroll Processing</h2>
+        </div>
+    </div>
+</div>
+
+<!-- Month Selection Card -->
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+        <h5 class="card-title mb-0">Select Month for Payroll Processing</h5>
+    </div>
+    <div class="card-body">
+        <form id="processPayrollForm" method="POST" action="{{ url_for('process_payroll') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <div class="row">
+                <div class="col-md-5 mb-3 mb-md-0">
+                    <label for="month" class="form-label">Month</label>
+                    <select class="form-select" id="month" name="month">
+                        {% for i in range(1, 13) %}
+                            <option value="{{ i }}" {% if month == i %}selected{% endif %}>
+                                {{ get_month_name(i) }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="col-md-5 mb-3 mb-md-0">
+                    <label for="year" class="form-label">Year</label>
+                    <select class="form-select" id="year" name="year">
+                        {% for y in range(year - 2, year + 2) %}
+                            <option value="{{ y }}" {% if year == y %}selected{% endif %}>{{ y }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="button" class="btn btn-outline-primary w-100" id="viewPayrollBtn">
+                        <i class="bi bi-eye me-1"></i> View
+                    </button>
+                </div>
+            </div>
+            
+            {% if is_processed %}
+                <div class="alert alert-success mt-3">
+                    <i class="bi bi-check-circle me-2"></i>
+                    Payroll has already been processed for {{ get_month_name(month) }} {{ year }}.
+                    <a href="{{ url_for('payslip_management', month=month, year=year) }}" class="alert-link">
+                        View Payslips
+                    </a>
+                </div>
+            {% else %}
+                <div class="alert alert-info mt-3">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Payroll for {{ get_month_name(month) }} {{ year }} has not been processed yet. 
+                    Click "Process Payroll" to generate payslips.
+                </div>
+                
+                <div class="d-grid gap-2 col-md-4 mx-auto mt-4">
+                    <button type="submit" class="btn btn-success btn-lg">
+                        <i class="bi bi-calculator me-2"></i> Process Payroll
+                    </button>
+                </div>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<!-- Payroll Preview -->
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+        <h5 class="card-title mb-0">Payroll Preview</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Employee ID</th>
+                        <th>Name</th>
+                        <th>Department</th>
+                        <th>Basic Salary</th>
+                        <th>Allowances</th>
+                        <th>Deductions</th>
+                        <th>Net Salary</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if employees %}
+                        {% for employee in employees %}
+                            <tr>
+                                <td>{{ employee.id }}</td>
+                                <td>{{ employee.name }}</td>
+                                <td>{{ employee.department }}</td>
+                                <td>${{ "%.2f"|format(employee.basic_salary) }}</td>
+                                <td>${{ "%.2f"|format(employee.basic_salary * 0.1) }}</td>
+                                <td>${{ "%.2f"|format(employee.basic_salary * 0.09) }}</td>
+                                <td>${{ "%.2f"|format(employee.basic_salary + (employee.basic_salary * 0.1) - (employee.basic_salary * 0.09)) }}</td>
+                            </tr>
+                        {% endfor %}
+                        <tr class="table-primary">
+                            <td colspan="3"><strong>Total</strong></td>
+                            <td>
+                                <strong>${{ "%.2f"|format(employees|sum(attribute='basic_salary')) }}</strong>
+                            </td>
+                            <td>
+                                <strong>${{ "%.2f"|format(employees|sum(attribute='basic_salary') * 0.1) }}</strong>
+                            </td>
+                            <td>
+                                <strong>${{ "%.2f"|format(employees|sum(attribute='basic_salary') * 0.09) }}</strong>
+                            </td>
+                            <td>
+                                <strong>${{ "%.2f"|format(employees|sum(attribute='basic_salary') + (employees|sum(attribute='basic_salary') * 0.1) - (employees|sum(attribute='basic_salary') * 0.09)) }}</strong>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center">No employees found for payroll processing</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Payroll Statistics -->
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Payroll Composition</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="payrollCompositionChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Departmental Payroll Distribution</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="departmentPayrollChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Payroll Process Guide -->
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+        <h5 class="card-title mb-0">Payroll Processing Guide</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <div class="rounded-circle bg-primary bg-opacity-10 mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                            <i class="bi bi-calendar-check text-primary" style="font-size: 1.5rem;"></i>
+                        </div>
+                        <h5>Step 1: Verify Attendance</h5>
+                        <p class="text-muted">Ensure all employee attendance records are accurate and up-to-date.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4 mb-3">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <div class="rounded-circle bg-success bg-opacity-10 mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                            <i class="bi bi-calculator text-success" style="font-size: 1.5rem;"></i>
+                        </div>
+                        <h5>Step 2: Process Payroll</h5>
+                        <p class="text-muted">Generate salary calculations including deductions and allowances.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4 mb-3">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <div class="rounded-circle bg-info bg-opacity-10 mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                            <i class="bi bi-file-earmark-text text-info" style="font-size: 1.5rem;"></i>
+                        </div>
+                        <h5>Step 3: Generate Payslips</h5>
+                        <p class="text-muted">Create and distribute individual payslips to employees.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize payroll composition chart
+    const compositionChartEl = document.getElementById('payrollCompositionChart');
+    if (compositionChartEl) {
+        const ctx = compositionChartEl.getContext('2d');
+        new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: ['Basic Salary', 'Allowances', 'Deductions'],
+                datasets: [{
+                    data: [75, 10, 15],
+                    backgroundColor: [
+                        '#0d6efd', // Basic salary
+                        '#20c997', // Allowances
+                        '#dc3545'  // Deductions
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            boxWidth: 15
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Initialize department payroll chart
+    const deptPayrollChartEl = document.getElementById('departmentPayrollChart');
+    if (deptPayrollChartEl) {
+        const ctx = deptPayrollChartEl.getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Engineering', 'HR', 'Finance', 'Operations', 'Marketing'],
+                datasets: [{
+                    label: 'Payroll Amount ($)',
+                    data: [150000, 50000, 80000, 110000, 60000],
+                    backgroundColor: '#0d6efd',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value.toLocaleString();
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    }
+    
+    // Set up view payroll button
+    const viewPayrollBtn = document.getElementById('viewPayrollBtn');
+    if (viewPayrollBtn) {
+        viewPayrollBtn.addEventListener('click', function() {
+            const month = document.getElementById('month').value;
+            const year = document.getElementById('year').value;
+            window.location.href = `/hr/payroll?month=${month}&year=${year}`;
+        });
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+
+{% block title %}My Attendance - PayrollPro{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-calendar-check me-2"></i>My Attendance</h2>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Mark Attendance Form -->
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Mark Today's Attendance</h5>
+            </div>
+            <div class="card-body">
+                {% if attendance_marked_today %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        You have already marked your attendance for today.
+                    </div>
+                {% else %}
+                    <form method="POST" action="{{ url_for('employee_attendance') }}">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            <label for="status" class="form-label">Status</label>
+                            {{ form.status(class="form-select") }}
+                            {% if form.status.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.status.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="note" class="form-label">Note (Optional)</label>
+                            {{ form.note(class="form-control", rows=3, placeholder="Add any comments about your attendance") }}
+                            {% if form.note.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.note.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle me-1"></i> Mark Attendance
+                            </button>
+                        </div>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Attendance Stats Card -->
+        <div class="card mt-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="card-title mb-0">Attendance Statistics</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6 mb-3">
+                        <div class="border rounded p-3">
+                            <h2 class="text-primary">{{ attendance_percentage }}%</h2>
+                            <p class="text-muted mb-0">This Month</p>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="border rounded p-3">
+                            <h2 class="text-success">{{ attendance_history|selectattr('status', 'equalto', 'present')|list|length }}</h2>
+                            <p class="text-muted mb-0">Days Present</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Attendance Calendar -->
+    <div class="col-md-8 mb-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Attendance Calendar</h5>
+            </div>
+            <div class="card-body">
+                <div id="attendanceCalendar"></div>
+            </div>
+        </div>
+        
+        <!-- Attendance History Table -->
+        <div class="card mt-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Recent Attendance History</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Note</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if attendance_history %}
+                                {% for record in attendance_history|sort(attribute='date', reverse=true) %}
+                                    <tr>
+                                        <td>{{ record.date }}</td>
+                                        <td>
+                                            {% if record.status == 'present' %}
+                                                <span class="badge text-bg-success">Present</span>
+                                            {% elif record.status == 'absent' %}
+                                                <span class="badge text-bg-danger">Absent</span>
+                                            {% elif record.status == 'half_day' %}
+                                                <span class="badge text-bg-warning">Half Day</span>
+                                            {% elif record.status == 'wfh' %}
+                                                <span class="badge text-bg-info">WFH</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ record.note or '-' }}</td>
+                                    </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="3" class="text-center">No attendance records found</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/attendance.js') }}"></script>
+{% endblock %}
