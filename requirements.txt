@@ -1,0 +1,30 @@
+# Core Flask Framework
+Flask==2.2.5
+
+# Flask Extensions
+Flask-WTF==1.1.1             # For forms and CSRF
+Flask-Login==0.6.3           # For user authentication
+Flask-Migrate==4.0.5         # For Alembic database migrations
+Flask-SQLAlchemy==3.1.1      # ORM
+Flask-Bcrypt==1.0.1          # Password hashing
+Flask-Mail==0.9.1            # Sending emails
+
+# Form & Field Validation
+email-validator==2.1.0.post1 # Required for WTForms Email()
+
+# Database Support
+PyMySQL==1.1.0               # MySQL connector (recommended for Flask + MySQL)
+mysql-connector-python==8.3.0  # Alternative MySQL connector (optional)
+
+# PDF Generation (if used)
+pdfkit==1.0.0
+wkhtmltopdf==0.2              # optional, if you're calling from Python (install executable separately)
+
+# Utilities
+python-dotenv==1.0.1         # For environment variable support (.env files)
+itsdangerous==2.1.2          # For secure token generation
+MarkupSafe==2.1.3            # Required by Flask and Jinja2
+Jinja2==3.1.3                # Template engine
+
+# Optional Dev Tools
+gunicorn==21.2.0             # WSGI HTTP server (optional, for production)
